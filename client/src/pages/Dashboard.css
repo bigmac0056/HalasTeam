@@ -1,0 +1,481 @@
+.dashboard {
+  padding: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.logout-btn {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Режим дома */
+.home-mode-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 25px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+}
+
+.home-mode-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: white;
+  font-size: 20px;
+}
+
+.home-mode-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.home-mode-btn {
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  backdrop-filter: blur(10px);
+}
+
+.home-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.home-mode-btn.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.home-mode-icon {
+  font-size: 20px;
+}
+
+/* Погода */
+.weather-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  border: 1px solid #dee2e6;
+}
+
+.weather-section h3 {
+  margin-top: 0;
+}
+
+.weather-temp {
+  font-size: 18px;
+  margin: 5px 0;
+  font-weight: 500;
+}
+
+.weather-info {
+  margin: 5px 0;
+  color: #6c757d;
+}
+
+.weather-error {
+  color: #dc3545;
+}
+
+.test-temperature-controls {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.test-label {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.test-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.test-btn {
+  padding: 6px 12px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.test-btn:hover {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
+/* Автоматизация */
+.automation-section {
+  background: #e7f3ff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  border: 2px solid #ccc;
+  transition: border-color 0.3s;
+}
+
+.automation-section.active {
+  border-color: #007bff;
+}
+
+.automation-section h3 {
+  margin-top: 0;
+}
+
+.automation-checkbox-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+.automation-checkbox {
+  margin-right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.automation-status-indicator {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.automation-info {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.automation-info p {
+  margin: 5px 0;
+  color: #495057;
+}
+
+.automation-status-box {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.automation-status-box.checking {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+}
+
+.automation-status-box.success {
+  background: #d4edda;
+  border: 1px solid #28a745;
+  color: #155724;
+}
+
+.automation-waiting {
+  margin-top: 15px;
+  padding: 12px;
+  background: #e7f3ff;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Добавление устройства */
+.add-device-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.add-device-section h3 {
+  margin-top: 0;
+}
+
+.device-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-input,
+.form-select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.add-device-btn {
+  padding: 12px 24px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.add-device-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* Bento Grid для устройств */
+.devices-section {
+  margin-bottom: 30px;
+}
+
+.devices-section h3 {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.devices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.device-card {
+  padding: 20px;
+  border-radius: 16px;
+  background: #f4f6f8;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  border-left: 6px solid;
+}
+
+.device-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+}
+
+.device-card.device-on {
+  border-left-color: #4CAF50;
+  background: linear-gradient(135deg, #f1f8f4 0%, #f4f6f8 100%);
+}
+
+.device-card.device-off {
+  border-left-color: #E53935;
+  background: linear-gradient(135deg, #fef5f5 0%, #f4f6f8 100%);
+}
+
+.device-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.device-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.device-status-indicator {
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+.device-status-indicator.on {
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.device-status-indicator.off {
+  color: #E53935;
+  background: rgba(229, 57, 53, 0.1);
+}
+
+.device-card-body {
+  flex: 1;
+  margin-bottom: 15px;
+}
+
+.device-room {
+  margin: 8px 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.device-type {
+  margin: 8px 0;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.device-card-footer {
+  margin-top: auto;
+}
+
+.device-toggle-btn {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.device-toggle-btn.on {
+  background: #E53935;
+  color: white;
+}
+
+.device-toggle-btn.on:hover {
+  background: #c62828;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(229, 57, 53, 0.3);
+}
+
+.device-toggle-btn.off {
+  background: #4CAF50;
+  color: white;
+}
+
+.device-toggle-btn.off:hover {
+  background: #388e3c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.empty-devices {
+  color: #6c757d;
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+}
+
+/* История автоматизаций */
+.automation-log-section {
+  background: #fff3cd;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #ffc107;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.1);
+}
+
+.automation-log-section h3 {
+  margin-top: 0;
+}
+
+.empty-log {
+  color: #6c757d;
+}
+
+.automation-log-list {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.automation-log-item {
+  margin-bottom: 8px;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Скроллбар для логов */
+.automation-log-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.automation-log-list::-webkit-scrollbar-track {
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 3px;
+}
+
+.automation-log-list::-webkit-scrollbar-thumb {
+  background: #ffc107;
+  border-radius: 3px;
+}
+
+.automation-log-list::-webkit-scrollbar-thumb:hover {
+  background: #ffb300;
+}
