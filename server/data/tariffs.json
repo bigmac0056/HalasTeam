@@ -1,0 +1,295 @@
+{
+    "providers": [
+        {
+            "id": "almaty_energosbyt",
+            "name": "АлматыЭнергоСбыт",
+            "region": "Almaty",
+            "city": "Almaty",
+            "coordinates": {
+                "lat": 43.2567,
+                "lon": 76.9286
+            },
+            "website": "https://esalmaty.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 90,
+                            "price": 23.16
+                        },
+                        {
+                            "limit": 140,
+                            "price": 30.73
+                        },
+                        {
+                            "limit": null,
+                            "price": 38.41
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "astana_energosbyt",
+            "name": "Астанаэнергосбыт",
+            "region": "Astana",
+            "city": "Astana",
+            "coordinates": {
+                "lat": 51.1605,
+                "lon": 71.4704
+            },
+            "website": "https://astanaenergosbyt.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 90,
+                            "price": 18.55
+                        },
+                        {
+                            "limit": 140,
+                            "price": 25.68
+                        },
+                        {
+                            "limit": null,
+                            "price": 36.19
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "shymkent_energo",
+            "name": "Энергопоток (Шымкент)",
+            "region": "Shymkent",
+            "city": "Shymkent",
+            "coordinates": {
+                "lat": 42.3417,
+                "lon": 69.5901
+            },
+            "website": "https://energo-potok.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 70,
+                            "price": 19.50
+                        },
+                        {
+                            "limit": 140,
+                            "price": 28.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 35.00
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "pavlodar_energo",
+            "name": "ПавлодарЭнерго",
+            "region": "Pavlodar",
+            "city": "Pavlodar",
+            "coordinates": {
+                "lat": 52.287,
+                "lon": 76.967
+            },
+            "website": "https://pavlodarenergo.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 100,
+                            "price": 16.00
+                        },
+                        {
+                            "limit": 150,
+                            "price": 26.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 32.00
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "karaganda_zharyk",
+            "name": "КарагандаЖылуСбыт",
+            "region": "Karaganda",
+            "city": "Karaganda",
+            "coordinates": {
+                "lat": 49.8020,
+                "lon": 73.1021
+            },
+            "website": "https://kzhs.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 100,
+                            "price": 18.00
+                        },
+                        {
+                            "limit": 150,
+                            "price": 27.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 33.50
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "oskemen_energo",
+            "name": "Шыгысэнерготрейд (Усть-Каменогорск)",
+            "region": "East Kazakhstan",
+            "city": "Oskemen",
+            "coordinates": {
+                "lat": 49.9500,
+                "lon": 82.6000
+            },
+            "website": "https://shygys.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 90,
+                            "price": 17.50
+                        },
+                        {
+                            "limit": 140,
+                            "price": 24.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 29.00
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "kostanay_energo",
+            "name": "КостанайЭнергоЦентр",
+            "region": "Kostanay",
+            "city": "Kostanay",
+            "coordinates": {
+                "lat": 53.2198,
+                "lon": 63.6354
+            },
+            "website": "https://kec.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 100,
+                            "price": 22.00
+                        },
+                        {
+                            "limit": 150,
+                            "price": 30.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 36.00
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "aktau_energo",
+            "name": "МАЭК (Актау)",
+            "region": "Mangystau",
+            "city": "Aktau",
+            "coordinates": {
+                "lat": 43.6480,
+                "lon": 51.1722
+            },
+            "website": "https://maek.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 70,
+                            "price": 18.00
+                        },
+                        {
+                            "limit": 140,
+                            "price": 22.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 26.00
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "atyrau_energo",
+            "name": "АтырауЭнергоСату",
+            "region": "Atyrau",
+            "city": "Atyrau",
+            "coordinates": {
+                "lat": 47.1127,
+                "lon": 51.8869
+            },
+            "website": "https://atyrauenergo.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 90,
+                            "price": 19.00
+                        },
+                        {
+                            "limit": 140,
+                            "price": 25.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 32.00
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "aktobe_energo",
+            "name": "АктобеЭнергоСнаб",
+            "region": "Aktobe",
+            "city": "Aktobe",
+            "coordinates": {
+                "lat": 50.2839,
+                "lon": 57.1670
+            },
+            "website": "https://aktobeenergo.kz/",
+            "tariffs": {
+                "electric": {
+                    "tiers": [
+                        {
+                            "limit": 90,
+                            "price": 20.00
+                        },
+                        {
+                            "limit": 140,
+                            "price": 28.00
+                        },
+                        {
+                            "limit": null,
+                            "price": 35.00
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "snapshots": {}
+}

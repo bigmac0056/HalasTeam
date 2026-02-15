@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?
+  name      String?
+  googleId  String?  @unique
+  avatar    String?
+  devices   Device[]
+  automationRules AutomationRule[]
+  notifications Notification[]
+  logs      AutomationLog[]
+  energyLogs EnergyLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  settings  UserSettings?
+}
+
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  homeMode  String   @default("Home") // Home, Away, Night, Vacation
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  room      String
+  type      String   // Light, Socket, Heater, AC, Sensor (Temp, Motion, etc.)
+  source    String?  // Philips Hue, etc.
+  status    Boolean  @default(false)
+  brightness Int     @default(100) // 0-100, only used for Light type
+  value     Float?   // For sensors: temperature, humidity, etc.
+  unit      String?  // °C, %, ppm
+  sensorType String?  // temperature, motion, smoke, waterLeak, light
+  isAlert   Boolean  @default(false)
+  lastUpdated DateTime @default(now()) // When the value/status matched
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AutomationRule {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  trigger   String
+  action    String
+  icon      String?
+  enabled   Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AutomationLog {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  metadata  String?  // JSON string for structured event data (who, what, source)
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EnergyLog {
+  id             String   @id @default(uuid())
+  userId         String
+  deviceId       String?
+  deviceName     String?
+  action         String? // on, off
+  energyConsumed Float    @default(0)
+  timestamp      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // info, warning, success, error
+  icon      String?
+  isRead    Boolean  @default(false)
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
