@@ -12,9 +12,41 @@ import {
 } from 'recharts';
 import API from '../api/api';
 
+const DEFAULT_COORDS = { lat: 51.1694, lon: 71.4491 };
+const CITY_LABELS = {
+    Astana: 'Астана',
+    Almaty: 'Алматы',
+    Shymkent: 'Шымкент',
+    Pavlodar: 'Павлодар',
+    Karaganda: 'Караганда',
+    Oskemen: 'Өскемен',
+    Kostanay: 'Костанай',
+    Aktau: 'Актау',
+    Atyrau: 'Атырау',
+    Aktobe: 'Актобе'
+};
+
+const localizeCity = (value) => {
+    if (!value) return '';
+    return CITY_LABELS[value] || value;
+};
+
+const buildRegionLabel = (city, region) => {
+    const safeCity = localizeCity(city);
+    const safeRegion = localizeCity(region);
+
+    if (safeCity && safeRegion) {
+        return safeCity.toLowerCase() === safeRegion.toLowerCase()
+            ? safeCity
+            : `${safeCity}, ${safeRegion}`;
+    }
+    return safeCity || safeRegion || '';
+};
+
 export default function Energy() {
     const [analytics, setAnalytics] = useState(null);
     const [tariff, setTariff] = useState(null);
+    const [resolvedCity, setResolvedCity] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -25,19 +57,47 @@ export default function Energy() {
     const [periodDays, setPeriodDays] = useState(30);
 
     // Location state
-    const [coords, setCoords] = useState({ lat: 51.1694, lon: 71.4491 }); // Default: Astana
+    const [coords, setCoords] = useState(null);
+    const [locationStatus, setLocationStatus] = useState('locating');
 
     useEffect(() => {
-        // 1. Get Location
+        let cancelled = false;
+
+        const applyFallbackLocation = () => {
+            if (cancelled) return;
+            setCoords(DEFAULT_COORDS);
+            setLocationStatus('fallback');
+        };
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-                (err) => console.warn("Location access denied, utilizing default (Astana)", err)
+                (pos) => {
+                    if (cancelled) return;
+                    setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+                    setLocationStatus('ok');
+                },
+                (err) => {
+                    console.warn('Location access denied, utilizing default (Astana)', err);
+                    applyFallbackLocation();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 5 * 60 * 1000
+                }
             );
+        } else {
+            applyFallbackLocation();
         }
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const fetchData = useCallback(async () => {
+        if (!coords?.lat || !coords?.lon) return;
+
         setLoading(true);
         setError('');
         try {
@@ -56,9 +116,9 @@ export default function Energy() {
             const realConsumption = Number(analyticsData?.totalEnergyConsumption || 0);
             const calcConsumption = consumptionOverride !== null ? consumptionOverride : realConsumption;
 
-            // 3. Fetch Tariff
-            if (coords.lat && coords.lon) {
-                const tariffRes = await API.get('/tariffs/resolve', {
+            // 3. Fetch Tariff + city from weather service for consistent geolocation naming
+            const [tariffRes, weatherRes] = await Promise.all([
+                API.get('/tariffs/resolve', {
                     params: {
                         lat: coords.lat,
                         lon: coords.lon,
@@ -66,13 +126,21 @@ export default function Energy() {
                         stoveType,
                         peopleCount: occupants
                     }
-                });
-                const tariffData = tariffRes.data || {};
-                setTariff({
-                    ...tariffData,
-                    totalCost: tariffData.totalCost ?? tariffData.totalKzt ?? 0,
-                    breakdown: tariffData.breakdown ?? tariffData.tariffBreakdown ?? []
-                });
+                }),
+                API.get('/weather', {
+                    params: { lat: coords.lat, lon: coords.lon }
+                }).catch(() => null)
+            ]);
+
+            const tariffData = tariffRes.data || {};
+            setTariff({
+                ...tariffData,
+                totalCost: tariffData.totalCost ?? tariffData.totalKzt ?? 0,
+                breakdown: tariffData.breakdown ?? tariffData.tariffBreakdown ?? []
+            });
+
+            if (weatherRes?.data?.city) {
+                setResolvedCity(weatherRes.data.city);
             }
         } catch (error) {
             console.error("Failed to load energy data:", error);
@@ -83,6 +151,7 @@ export default function Energy() {
     }, [coords, stoveType, occupants, consumptionOverride, periodDays]);
 
     useEffect(() => {
+        if (!coords?.lat || !coords?.lon) return;
         fetchData();
     }, [coords, stoveType, occupants, consumptionOverride, periodDays, fetchData]);
 
@@ -96,15 +165,16 @@ export default function Energy() {
     }, {});
     const chartData = Object.entries(groupedByDay).map(([name, value]) => ({
         name,
-        value: Number(value.toFixed(2))
+        kwh: Number(value.toFixed(2))
     }));
-    const displayChartData = chartData.length > 0 ? chartData : [{ name: 'Нет данных', value: 0 }];
+    const displayChartData = chartData.length > 0 ? chartData : [{ name: 'Нет данных', kwh: 0 }];
 
     const currentConsumption = consumptionOverride !== null
         ? consumptionOverride
         : (analytics?.totalEnergyConsumption || 0);
     const periodLabel = periodDays === 0 ? 'за все время' : `за ${periodDays} дн.`;
-    const displayRegion = tariff?.city ? `${tariff.city}${tariff.region ? `, ${tariff.region}` : ''}` : (tariff?.region || 'Определение...');
+    const tariffRegionLabel = buildRegionLabel(tariff?.city, tariff?.region);
+    const displayRegion = resolvedCity || tariffRegionLabel || (locationStatus === 'locating' ? 'Определение...' : 'Не определен');
     const hasTariffCost = tariff && typeof tariff.totalCost === 'number';
 
     return (
@@ -114,8 +184,8 @@ export default function Energy() {
             <main className="max-w-[1600px] mx-auto px-6 py-8 pb-32">
                 <div className="mb-8 flex justify-between items-end">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Аналитика Энергии</h1>
-                        <p className="text-slate-500 dark:text-slate-400">Реальные данные с ваших устройств {periodLabel}</p>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Аналитика энергопотребления</h1>
+                        <p className="text-slate-500 dark:text-slate-400">Данные по электричеству с ваших устройств {periodLabel}</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <select
@@ -174,6 +244,9 @@ export default function Energy() {
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white truncate">
                             {displayRegion}
                         </h3>
+                        {locationStatus === 'fallback' && (
+                            <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">Геолокация отключена: используется резерв</p>
+                        )}
                     </div>
 
                     {/* Estimated Cost */}
@@ -199,11 +272,14 @@ export default function Energy() {
                             <BarChart data={displayChartData} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                                 <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                                <YAxis tickFormatter={(val) => `${val}`} />
+                                <Tooltip
+                                    formatter={(val) => [`${Number(val).toFixed(2)} кВт·ч`, 'Потребление']}
+                                    labelFormatter={(label) => `Дата: ${label}`}
+                                />
+                                <Bar dataKey="kwh" radius={[8, 8, 0, 0]} name="Потребление">
                                     {displayChartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#3B82F6' : '#CBD5E1'} />
+                                        <Cell key={`cell-${index}`} fill={entry.kwh > 0 ? '#3B82F6' : '#CBD5E1'} />
                                     ))}
                                 </Bar>
                             </BarChart>
@@ -248,18 +324,19 @@ export default function Energy() {
 
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Тип плиты</label>
+                                    <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Тип плиты (для норматива)</label>
                                     <div className="relative">
                                         <select
                                             value={stoveType}
                                             onChange={(e) => setStoveType(e.target.value)}
                                             className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-slate-900 dark:text-white font-medium appearance-none focus:ring-2 focus:ring-primary/20"
                                         >
-                                            <option value="electric">Электро</option>
-                                            <option value="gas">Газ</option>
+                                            <option value="electric">Электрическая</option>
+                                            <option value="gas">Газовая</option>
                                         </select>
                                         <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 text-sm">flash_on</span>
                                     </div>
+                                    <p className="text-xs text-slate-400 mt-2">Влияет на расчет соц. порогов тарифа в некоторых регионах</p>
                                 </div>
 
                                 <div>

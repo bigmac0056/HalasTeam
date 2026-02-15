@@ -133,7 +133,7 @@ const Header = () => {
                                 ? 'text-primary font-semibold'
                                 : 'text-text-muted-light dark:text-text-muted-dark hover:text-primary'}`}
                         >
-                            Энергия
+                            Энергопотребление
                         </Link>
                         <Link
                             to="/automation"
