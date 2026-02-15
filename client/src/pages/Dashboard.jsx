@@ -27,6 +27,7 @@ const scenarioToMode = {
 };
 
 const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 'Коридор'];
+const DEFAULT_WEATHER_COORDS = { lat: 51.1694, lon: 71.4491 };
 
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
@@ -223,21 +224,40 @@ export default function Dashboard() {
   }, [navigate, syncFromBackend]);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const res = await API.get(`/weather?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
-            setWeather(res.data);
-          } catch (e) {
-            console.error('Error loading weather:', e);
-          }
-        },
-        () => {
-          console.warn('Geolocation disabled');
-        }
-      );
+    const loadWeather = async (lat, lon) => {
+      try {
+        const res = await API.get('/weather', {
+          params: { lat, lon }
+        });
+        setWeather(res.data);
+      } catch (error) {
+        console.error('Error loading weather:', error);
+      }
+    };
+
+    const loadFallbackWeather = () => {
+      loadWeather(DEFAULT_WEATHER_COORDS.lat, DEFAULT_WEATHER_COORDS.lon);
+    };
+
+    if (!navigator.geolocation) {
+      loadFallbackWeather();
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        await loadWeather(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        console.warn('Geolocation disabled. Using fallback weather location.');
+        loadFallbackWeather();
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 5 * 60 * 1000
+      }
+    );
   }, []);
 
   const rooms = ['Все', ...new Set([...ROOM_OPTIONS, ...devices.map(d => d.room).filter(Boolean)])];

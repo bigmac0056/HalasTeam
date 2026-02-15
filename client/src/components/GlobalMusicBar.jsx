@@ -44,7 +44,7 @@ export default function GlobalMusicBar() {
             step="0.1"
             value={Number.isFinite(playback.progressPercent) ? playback.progressPercent : 0}
             onChange={(event) => seek(Number(event.target.value))}
-            className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-pink-500 bg-slate-200 dark:bg-slate-700"
+            className="ss-slider w-full"
             title="Перемотка"
           />
           <div className="mt-1 flex justify-between text-[11px] text-slate-400">

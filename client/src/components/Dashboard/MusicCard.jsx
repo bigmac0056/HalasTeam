@@ -62,7 +62,7 @@ const MusicCard = ({
                     value={Number.isFinite(progressPercent) ? progressPercent : 0}
                     onChange={(event) => onSeek?.(Number(event.target.value))}
                     disabled={controlsDisabled || !currentTrackTitle}
-                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-pink-500 bg-slate-200 dark:bg-slate-700 disabled:opacity-50"
+                    className="ss-slider w-full disabled:opacity-50"
                     title="Перемотка"
                 />
                 <div className="mt-1 flex justify-between text-[10px] text-slate-400">

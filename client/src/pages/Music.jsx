@@ -245,7 +245,7 @@ export default function Music() {
                             step="0.1"
                             value={Number.isFinite(playback.progressPercent) ? playback.progressPercent : 0}
                             onChange={(event) => seek(Number(event.target.value))}
-                            className="mt-3 w-full h-1.5 rounded-full appearance-none cursor-pointer accent-pink-500 bg-slate-200 dark:bg-slate-700"
+                            className="ss-slider mt-3 w-full"
                         />
                         <div className="mt-1 flex justify-between text-xs text-slate-400">
                             <span>{playback.currentTimeLabel}</span>
