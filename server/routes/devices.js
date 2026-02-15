@@ -161,8 +161,7 @@ router.put('/:deviceId/value', async (req, res) => {
     // Trigger Sensor Automation
     if (updatedDevice) {
       const { checkSensorRules } = require('../services/scheduler');
-      // Run async without awaiting to not block response
-      checkSensorRules(updatedDevice).catch(err => console.error(err));
+      await checkSensorRules(updatedDevice);
     }
 
     res.json({

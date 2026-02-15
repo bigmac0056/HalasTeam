@@ -62,20 +62,6 @@ router.patch('/:id/toggle', async (req, res) => {
   }
 });
 
-// Delete an automation rule
-router.delete('/:id', async (req, res) => {
-  try {
-    const success = await deleteAutomationRule(req.params.id, req.user.id);
-    if (success) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: 'Rule not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete rule' });
-  }
-});
-
 // Clear automation logs
 router.delete('/logs', async (req, res) => {
   try {
@@ -113,6 +99,20 @@ router.delete('/logs', async (req, res) => {
   }
 });
 
+// Delete an automation rule
+router.delete('/:id', async (req, res) => {
+  try {
+    const success = await deleteAutomationRule(req.params.id, req.user.id);
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Rule not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete rule' });
+  }
+});
+
 // Execute automation rules — checks all enabled rules and performs matching actions
 router.post('/execute', async (req, res) => {
   try {
@@ -138,7 +138,9 @@ router.post('/execute', async (req, res) => {
       // Uses a 2-minute window to avoid missing the target minute with 60s checks
       if (triggerData.type === 'time') {
         const now = new Date();
-        const [targetHour, targetMin] = triggerData.time.split(':').map(Number);
+        const triggerTime = triggerData.time || triggerData.value;
+        if (!triggerTime || typeof triggerTime !== 'string' || !triggerTime.includes(':')) continue;
+        const [targetHour, targetMin] = triggerTime.split(':').map(Number);
         const targetMs = targetHour * 3600000 + targetMin * 60000;
         const nowMs = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
         const diff = nowMs - targetMs;
@@ -160,13 +162,17 @@ router.post('/execute', async (req, res) => {
       // Action: { deviceId: "...", setStatus: true/false }
       const targetDevice = devices.find(d => d.id === actionData.deviceId);
       if (!targetDevice) continue;
+      const desiredStatus = typeof actionData.status === 'boolean'
+        ? actionData.status
+        : actionData.setStatus;
+      if (typeof desiredStatus !== 'boolean') continue;
 
       // Only act if device is not already in the desired state
-      if (targetDevice.status === actionData.setStatus) continue;
+      if (targetDevice.status === desiredStatus) continue;
 
-      await updateDevice(targetDevice.id, req.user.id, { status: actionData.setStatus });
+      await updateDevice(targetDevice.id, req.user.id, { status: desiredStatus });
 
-      const statusText = actionData.setStatus ? 'ВКЛ' : 'ВЫКЛ';
+      const statusText = desiredStatus ? 'ВКЛ' : 'ВЫКЛ';
       const logMessage = `⚡ Автоматизация: ${targetDevice.name} ${statusText} (${rule.name})`;
 
       await addAutomationLog({ userId: req.user.id, message: logMessage });
@@ -199,8 +205,13 @@ router.post('/execute', async (req, res) => {
 router.post('/execute-now', async (req, res) => {
   try {
     const { checkAndExecuteRules } = require('../services/scheduler');
-    await checkAndExecuteRules();
-    res.json({ success: true, message: 'Automation check triggered' });
+    const executed = await checkAndExecuteRules();
+    res.json({
+      success: true,
+      message: 'Automation check triggered',
+      executedCount: Array.isArray(executed) ? executed.length : 0,
+      executed: Array.isArray(executed) ? executed : []
+    });
   } catch (error) {
     console.error('Manual execution failed:', error);
     res.status(500).json({ error: 'Manual execution failed' });

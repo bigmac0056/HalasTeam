@@ -22,7 +22,11 @@ const getReportData = async (userId, periodDays, options = {}) => {
         }
     });
 
-    const totalConsumption = logs.reduce((acc, log) => acc + log.energyConsumed, 0);
+    const logsConsumption = logs.reduce((acc, log) => acc + log.energyConsumed, 0);
+    const overrideConsumption = Number(options.consumptionKwh);
+    const totalConsumption = Number.isFinite(overrideConsumption) && overrideConsumption >= 0
+        ? overrideConsumption
+        : logsConsumption;
     const avgDaily = totalConsumption / (periodDays || 1);
 
     const lat = Number(options.lat);
@@ -111,7 +115,8 @@ router.get('/energy/preview', async (req, res) => {
             lat: req.query.lat,
             lon: req.query.lon,
             stoveType: req.query.stoveType,
-            peopleCount: req.query.peopleCount
+            peopleCount: req.query.peopleCount,
+            consumptionKwh: req.query.consumptionKwh
         });
         res.json(data);
     } catch (e) {
@@ -126,7 +131,8 @@ router.get('/energy/pdf', async (req, res) => {
             lat: req.query.lat,
             lon: req.query.lon,
             stoveType: req.query.stoveType,
-            peopleCount: req.query.peopleCount
+            peopleCount: req.query.peopleCount,
+            consumptionKwh: req.query.consumptionKwh
         });
         const pdfBuffer = await pdfService.generateEnergyReport(data);
 
@@ -148,7 +154,8 @@ router.post('/energy/email', async (req, res) => {
             lat: req.body.lat,
             lon: req.body.lon,
             stoveType: req.body.stoveType,
-            peopleCount: req.body.peopleCount
+            peopleCount: req.body.peopleCount,
+            consumptionKwh: req.body.consumptionKwh
         });
         const pdfBuffer = await pdfService.generateEnergyReport(data);
 

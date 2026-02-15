@@ -31,6 +31,31 @@ router.get('/', async (req, res) => {
       0
     );
 
+    // Comparison against previous equal period (for period-based analytics only)
+    let comparison = null;
+    if (periodMs) {
+      const currentPeriodStartTs = now - periodMs;
+      const previousPeriodStartTs = now - periodMs * 2;
+
+      const previousEnergyRecords = energyRecords.filter((record) => {
+        const ts = new Date(record.timestamp).getTime();
+        return ts >= previousPeriodStartTs && ts < currentPeriodStartTs;
+      });
+
+      const previousConsumption = previousEnergyRecords.reduce(
+        (sum, record) => sum + (record.energyConsumed || 0),
+        0
+      );
+
+      const deltaKwh = totalEnergyConsumption - previousConsumption;
+      comparison = {
+        currentKwh: totalEnergyConsumption,
+        previousKwh: previousConsumption,
+        deltaKwh,
+        deltaPercent: previousConsumption > 0 ? (deltaKwh / previousConsumption) * 100 : null
+      };
+    }
+
     // Статистика по комнатам
     const roomStats = {};
     devices.forEach(device => {
@@ -61,6 +86,16 @@ router.get('/', async (req, res) => {
       }
     });
 
+    // Consumption by rooms (only for selected period)
+    const deviceById = new Map(devices.map((device) => [device.id, device]));
+    const deviceByName = new Map(devices.map((device) => [device.name, device]));
+    const roomConsumption = {};
+    filteredEnergyRecords.forEach((record) => {
+      const linkedDevice = deviceById.get(record.deviceId) || deviceByName.get(record.deviceName);
+      const roomName = linkedDevice?.room || 'Не указано';
+      roomConsumption[roomName] = (roomConsumption[roomName] || 0) + Number(record.energyConsumed || 0);
+    });
+
     // Получение рекомендаций (опционально с погодой)
     let recommendations = [];
     const { lat, lon } = req.query;
@@ -84,7 +119,9 @@ router.get('/', async (req, res) => {
         inactiveDevices: devices.length - activeDevices.length,
         totalEnergyConsumption,
         roomStats,
+        roomConsumption,
         typeStats,
+        comparison,
         periodDays,
         recentActivity: filteredEnergyRecords.slice(0, 30).reverse()
       },

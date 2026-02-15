@@ -30,6 +30,11 @@ const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 
 const DEFAULT_WEATHER_COORDS = { lat: 51.1694, lon: 71.4491 };
 const WEATHER_REFRESH_MS = 5 * 60 * 1000;
 const LAST_KNOWN_COORDS_KEY = 'smartsphere_last_known_coords';
+const DEFAULT_AI_STATUS = {
+  new: { count: 0, items: [] },
+  applied: { count: 0, items: [] },
+  effect: { successfulActions: 0, estimatedSavedKwhMonth: 0, estimatedSavedKztMonth: 0 }
+};
 
 const readStoredCoords = () => {
   try {
@@ -118,6 +123,7 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [aiActions, setAiActions] = useState([]);
+  const [aiStatus, setAiStatus] = useState(DEFAULT_AI_STATUS);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
@@ -211,10 +217,24 @@ export default function Dashboard() {
     }
   };
 
+  const fetchAiStatus = async () => {
+    try {
+      const res = await API.get('/ai/status', { params: { lookbackDays: 30 } });
+      setAiStatus({
+        new: res.data?.new || { count: 0, items: [] },
+        applied: res.data?.applied || { count: 0, items: [] },
+        effect: res.data?.effect || { successfulActions: 0, estimatedSavedKwhMonth: 0, estimatedSavedKztMonth: 0 }
+      });
+    } catch (error) {
+      console.error('Error fetching AI status:', error);
+      setAiStatus(DEFAULT_AI_STATUS);
+    }
+  };
+
   const applyAiRecommendation = async (id) => {
     try {
       await API.post(`/ai/recommendations/${id}/apply`);
-      await Promise.all([fetchAiRecommendations(), fetchAiActions(), fetchDevices(), fetchAutomationLogs()]);
+      await Promise.all([fetchAiRecommendations(), fetchAiActions(), fetchAiStatus(), fetchDevices(), fetchAutomationLogs()]);
     } catch (error) {
       console.error('Error applying AI recommendation:', error);
     }
@@ -223,7 +243,7 @@ export default function Dashboard() {
   const dismissAiRecommendation = async (id) => {
     try {
       await API.post(`/ai/recommendations/${id}/dismiss`);
-      await fetchAiRecommendations();
+      await Promise.all([fetchAiRecommendations(), fetchAiStatus()]);
     } catch (error) {
       console.error('Error dismissing AI recommendation:', error);
     }
@@ -325,7 +345,8 @@ export default function Dashboard() {
           fetchNotifications(),
           syncFromBackend(),
           fetchAiRecommendations(),
-          fetchAiActions()
+          fetchAiActions(),
+          fetchAiStatus()
         ]);
       } catch (error) {
         console.error("Dashboard init error:", error);
@@ -555,16 +576,42 @@ export default function Dashboard() {
 
             {/* Top Navigation / Mode Switcher */}
             <div className="flex flex-wrap items-center justify-between gap-6">
-              <div className="flex bg-white dark:bg-card-dark p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                {['Home', 'Away', 'Night', 'Vacation'].map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => updateHomeMode(mode)}
-                    className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${homeMode === mode ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
-                  >
-                    {mode === 'Home' ? 'Дома' : mode === 'Away' ? 'Ушел' : mode === 'Night' ? 'Ночь' : 'Отпуск'}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex bg-white dark:bg-card-dark p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  {['Home', 'Away', 'Night', 'Vacation'].map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => updateHomeMode(mode)}
+                      className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${homeMode === mode ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                    >
+                      {mode === 'Home' ? 'Дома' : mode === 'Away' ? 'Ушел' : mode === 'Night' ? 'Ночь' : 'Отпуск'}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateHomeMode('Away')}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-colors"
+                  title='Быстрый режим: Ушел из дома'
+                >
+                  Я ушел
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateHomeMode('Night')}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                  title='Быстрый режим: Ночь'
+                >
+                  Ночь
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateHomeMode('Away')}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-colors"
+                  title='Быстро отключить активные устройства'
+                >
+                  Выключить всё
+                </button>
               </div>
               <button
                 onClick={() => setShowAddDevice(true)}
@@ -619,6 +666,7 @@ export default function Dashboard() {
               onApplyRecommendation={applyAiRecommendation}
               onDismissRecommendation={dismissAiRecommendation}
               actions={aiActions}
+              aiStatus={aiStatus}
             />
 
             {/* Automation Logs Sidebar version */}

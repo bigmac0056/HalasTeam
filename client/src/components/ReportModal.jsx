@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import API from '../api/api';
 
-export default function ReportModal({ isOpen, onClose, periodDays, coords, stoveType, peopleCount }) {
+export default function ReportModal({ isOpen, onClose, periodDays, coords, stoveType, peopleCount, consumptionKwh }) {
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState('');
@@ -18,7 +18,8 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                     lat: coords?.lat,
                     lon: coords?.lon,
                     stoveType,
-                    peopleCount
+                    peopleCount,
+                    consumptionKwh
                 }
             });
             setReport(res.data);
@@ -27,7 +28,7 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
         } finally {
             setLoading(false);
         }
-    }, [periodDays, coords?.lat, coords?.lon, stoveType, peopleCount]);
+    }, [periodDays, coords?.lat, coords?.lon, stoveType, peopleCount, consumptionKwh]);
 
     useEffect(() => {
         if (isOpen) {
@@ -43,7 +44,8 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                     lat: coords?.lat,
                     lon: coords?.lon,
                     stoveType,
-                    peopleCount
+                    peopleCount,
+                    consumptionKwh
                 },
                 responseType: 'blob'
             });
@@ -55,7 +57,7 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
             link.click();
         } catch (error) {
             console.error(error);
-            alert('Ошибка скачивания');
+            setSendStatus({ type: 'error', message: 'Ошибка скачивания отчета' });
         }
     };
 
@@ -75,7 +77,8 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                 lat: coords?.lat,
                 lon: coords?.lon,
                 stoveType,
-                peopleCount
+                peopleCount,
+                consumptionKwh
             });
             setSendStatus({ type: 'success', message: 'Отчет успешно отправлен!' });
             setEmail('');

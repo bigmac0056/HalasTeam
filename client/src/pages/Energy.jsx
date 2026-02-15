@@ -15,6 +15,11 @@ import API from '../api/api';
 
 const DEFAULT_COORDS = { lat: 51.1694, lon: 71.4491 };
 const LAST_KNOWN_COORDS_KEY = 'smartsphere_last_known_coords';
+const DEFAULT_AI_STATUS = {
+    new: { count: 0, items: [] },
+    applied: { count: 0, items: [] },
+    effect: { successfulActions: 0, estimatedSavedKwhMonth: 0, estimatedSavedKztMonth: 0 }
+};
 const CITY_LABELS = {
     Astana: 'Астана',
     Almaty: 'Алматы',
@@ -71,6 +76,7 @@ export default function Energy() {
     const [analytics, setAnalytics] = useState(null);
     const [tariff, setTariff] = useState(null);
     const [aiRecommendations, setAiRecommendations] = useState([]);
+    const [aiStatus, setAiStatus] = useState(DEFAULT_AI_STATUS);
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiBusyId, setAiBusyId] = useState(null);
     const [resolvedCity, setResolvedCity] = useState('');
@@ -102,11 +108,28 @@ export default function Energy() {
         }
     }, []);
 
+    const fetchAiStatus = useCallback(async () => {
+        try {
+            const lookbackDays = periodDays === 0 ? 90 : periodDays;
+            const res = await API.get('/ai/status', {
+                params: { lookbackDays }
+            });
+            setAiStatus({
+                new: res.data?.new || { count: 0, items: [] },
+                applied: res.data?.applied || { count: 0, items: [] },
+                effect: res.data?.effect || { successfulActions: 0, estimatedSavedKwhMonth: 0, estimatedSavedKztMonth: 0 }
+            });
+        } catch (error) {
+            console.error('Failed to load AI status:', error);
+            setAiStatus(DEFAULT_AI_STATUS);
+        }
+    }, [periodDays]);
+
     const handleApplyAiRecommendation = async (id) => {
         setAiBusyId(id);
         try {
             await API.post(`/ai/recommendations/${id}/apply`);
-            await Promise.all([fetchAiRecommendations(), fetchData()]);
+            await Promise.all([fetchAiRecommendations(), fetchAiStatus(), fetchData()]);
         } catch (error) {
             console.error('Failed to apply recommendation:', error);
         } finally {
@@ -118,7 +141,7 @@ export default function Energy() {
         setAiBusyId(id);
         try {
             await API.post(`/ai/recommendations/${id}/dismiss`);
-            await fetchAiRecommendations();
+            await Promise.all([fetchAiRecommendations(), fetchAiStatus()]);
         } catch (error) {
             console.error('Failed to dismiss recommendation:', error);
         } finally {
@@ -239,6 +262,10 @@ export default function Energy() {
         fetchAiRecommendations();
     }, [fetchAiRecommendations]);
 
+    useEffect(() => {
+        fetchAiStatus();
+    }, [fetchAiStatus]);
+
     // Format currency
     const formatKZT = (val) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT' }).format(val);
 
@@ -263,6 +290,18 @@ export default function Energy() {
     const tariffRegionLabel = buildRegionLabel(tariff?.city, tariff?.region);
     const displayRegion = resolvedCity || tariffRegionLabel || (locationStatus === 'locating' ? 'Определение...' : 'Не определен');
     const hasTariffCost = tariff && typeof tariff.totalCost === 'number';
+    const comparison = analytics?.comparison;
+    const currentPeriodKwh = Number(comparison?.currentKwh || 0);
+    const previousPeriodKwh = Number(comparison?.previousKwh || 0);
+    const periodRate = hasTariffCost && currentPeriodKwh > 0
+        ? Number(tariff.totalCost) / currentPeriodKwh
+        : 0;
+    const currentPeriodCost = hasTariffCost ? Number(tariff.totalCost) : 0;
+    const previousPeriodCost = periodRate > 0 ? previousPeriodKwh * periodRate : 0;
+    const costDelta = currentPeriodCost - previousPeriodCost;
+    const roomConsumptionRows = Object.entries(analytics?.roomConsumption || {})
+        .map(([roomName, kwh]) => ({ roomName, kwh: Number(kwh || 0) }))
+        .sort((a, b) => b.kwh - a.kwh);
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300 font-sans">
@@ -382,6 +421,68 @@ export default function Energy() {
                     </div>
                 </div>
 
+                {/* Period Comparison */}
+                {comparison && (
+                    <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Сравнение периодов</h2>
+                            <span className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                текущие {periodDays} дн. vs предыдущие {periodDays} дн.
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <p className="text-sm text-slate-500 mb-1">Текущий период</p>
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{currentPeriodKwh.toFixed(1)} кВт·ч</p>
+                                <p className="text-sm text-slate-500 mt-1">{formatKZT(currentPeriodCost)}</p>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <p className="text-sm text-slate-500 mb-1">Прошлый период</p>
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{previousPeriodKwh.toFixed(1)} кВт·ч</p>
+                                <p className="text-sm text-slate-500 mt-1">{formatKZT(previousPeriodCost)}</p>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <p className="text-sm text-slate-500 mb-1">Изменение</p>
+                                <p className={`text-2xl font-bold ${Number(comparison.deltaKwh) > 0 ? 'text-red-500' : Number(comparison.deltaKwh) < 0 ? 'text-green-500' : 'text-slate-900 dark:text-white'}`}>
+                                    {Number(comparison.deltaKwh) > 0 ? '+' : ''}{Number(comparison.deltaKwh || 0).toFixed(1)} кВт·ч
+                                </p>
+                                <p className={`text-sm mt-1 ${costDelta > 0 ? 'text-red-500' : costDelta < 0 ? 'text-green-500' : 'text-slate-500'}`}>
+                                    {costDelta > 0 ? '+' : ''}{formatKZT(costDelta)} {Number.isFinite(comparison.deltaPercent) ? `• ${comparison.deltaPercent > 0 ? '+' : ''}${comparison.deltaPercent.toFixed(1)}%` : ''}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Room Breakdown */}
+                <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Разбивка по комнатам</h2>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{periodLabel}</span>
+                    </div>
+                    {roomConsumptionRows.length === 0 ? (
+                        <p className="text-sm text-slate-400">Нет данных по комнатам за выбранный период.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {roomConsumptionRows.map((item, index) => {
+                                const maxValue = roomConsumptionRows[0]?.kwh || 1;
+                                const widthPercent = Math.max(6, Math.round((item.kwh / maxValue) * 100));
+                                return (
+                                    <div key={`${item.roomName}-${index}`} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.roomName}</p>
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.kwh.toFixed(2)} кВт·ч</p>
+                                        </div>
+                                        <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                            <div className="h-2 rounded-full bg-primary" style={{ width: `${widthPercent}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
                 {/* Tariff Calculator Section */}
                 <div className="bg-white dark:bg-card-dark p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
                     <div className="flex items-center justify-between mb-6">
@@ -397,6 +498,26 @@ export default function Energy() {
                         >
                             {isAiLoading ? 'Обновление...' : 'Обновить'}
                         </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                            <p className="text-xs uppercase tracking-wide font-bold text-slate-400 mb-1">Новые</p>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white">{aiStatus?.new?.count || 0}</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                            <p className="text-xs uppercase tracking-wide font-bold text-slate-400 mb-1">Применено</p>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white">{aiStatus?.applied?.count || 0}</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+                            <p className="text-xs uppercase tracking-wide font-bold text-emerald-600 mb-1">Эффект</p>
+                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-300">
+                                {(Number(aiStatus?.effect?.estimatedSavedKwhMonth || 0)).toFixed(1)} кВт·ч/мес
+                            </p>
+                            <p className="text-sm font-semibold text-emerald-600">
+                                ~{Math.round(Number(aiStatus?.effect?.estimatedSavedKztMonth || 0))} ₸/мес
+                            </p>
+                        </div>
                     </div>
 
                     {isAiLoading ? (
@@ -440,6 +561,22 @@ export default function Energy() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {Array.isArray(aiStatus?.applied?.items) && aiStatus.applied.items.length > 0 && (
+                        <div className="mt-6 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white mb-3">Недавно применено</p>
+                            <div className="space-y-2">
+                                {aiStatus.applied.items.slice(0, 3).map((item) => (
+                                    <div key={item.id} className="flex items-center justify-between text-sm">
+                                        <span className="text-slate-700 dark:text-slate-200">{item.title}</span>
+                                        <span className="text-emerald-600 font-semibold">
+                                            ~{Number(item.estimatedKztSaveMonth || 0).toFixed(0)} ₸/мес
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -553,10 +690,10 @@ export default function Energy() {
                     isOpen={isReportModalOpen}
                     onClose={() => setIsReportModalOpen(false)}
                     periodDays={periodDays}
-                    totalCost={tariff?.totalCost || 0}
                     coords={coords}
                     stoveType={stoveType}
                     peopleCount={occupants}
+                    consumptionKwh={currentConsumption}
                 />
             </main>
         </div>

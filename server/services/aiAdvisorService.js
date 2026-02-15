@@ -222,4 +222,53 @@ const getActionLogs = async (userId, limit = 10) => {
     });
 };
 
-module.exports = { generateRecommendations, applyRecommendation, dismissRecommendation, getActionLogs };
+const getRecommendationsStatus = async (userId, lookbackDays = 30) => {
+    const safeLookbackDays = Math.min(Math.max(Number(lookbackDays) || 30, 1), 365);
+    const since = new Date(Date.now() - safeLookbackDays * 24 * 60 * 60 * 1000);
+
+    const [activeRecs, appliedRecs, actionLogs] = await Promise.all([
+        prisma.aiRecommendation.findMany({
+            where: { userId, isDismissed: false, isApplied: false },
+            orderBy: { priority: 'desc' }
+        }),
+        prisma.aiRecommendation.findMany({
+            where: { userId, isApplied: true },
+            orderBy: { createdAt: 'desc' },
+            take: 20
+        }),
+        prisma.aiActionLog.findMany({
+            where: { userId, timestamp: { gte: since } },
+            orderBy: { timestamp: 'desc' },
+            take: 50
+        })
+    ]);
+
+    const estimatedSavedKwh = appliedRecs.reduce((sum, rec) => sum + Number(rec.estimatedKwhSaveMonth || 0), 0);
+    const estimatedSavedKzt = appliedRecs.reduce((sum, rec) => sum + Number(rec.estimatedKztSaveMonth || 0), 0);
+    const successfulActions = actionLogs.filter((log) => log.status === 'SUCCESS').length;
+
+    return {
+        lookbackDays: safeLookbackDays,
+        new: {
+            count: activeRecs.length,
+            items: activeRecs
+        },
+        applied: {
+            count: appliedRecs.length,
+            items: appliedRecs
+        },
+        effect: {
+            successfulActions,
+            estimatedSavedKwhMonth: Number(estimatedSavedKwh.toFixed(1)),
+            estimatedSavedKztMonth: Number(estimatedSavedKzt.toFixed(0))
+        }
+    };
+};
+
+module.exports = {
+    generateRecommendations,
+    applyRecommendation,
+    dismissRecommendation,
+    getActionLogs,
+    getRecommendationsStatus
+};

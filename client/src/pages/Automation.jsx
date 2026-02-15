@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import API from '../api/api';
@@ -6,6 +6,7 @@ import API from '../api/api';
 export default function Automation() {
     const [devices, setDevices] = useState([]);
     const [automationRules, setAutomationRules] = useState([]);
+    const [automationLogs, setAutomationLogs] = useState([]);
     const [showAddRule, setShowAddRule] = useState(false);
     const [newRule, setNewRule] = useState({
         name: '',
@@ -22,23 +23,32 @@ export default function Automation() {
 
     const navigate = useNavigate();
 
-    const fetchRules = async () => {
+    const fetchRules = useCallback(async () => {
         try {
             const res = await API.get('/automation');
             setAutomationRules(res.data.rules);
         } catch (error) {
             console.error('Error fetching rules:', error);
         }
-    };
+    }, []);
 
-    const fetchDevices = async () => {
+    const fetchDevices = useCallback(async () => {
         try {
             const res = await API.get('/devices');
             setDevices(res.data.devices);
         } catch (error) {
             console.error('Error fetching devices:', error);
         }
-    };
+    }, []);
+
+    const fetchLogs = useCallback(async () => {
+        try {
+            const res = await API.get('/automation/logs');
+            setAutomationLogs(Array.isArray(res.data?.logs) ? res.data.logs : []);
+        } catch (error) {
+            console.error('Error fetching automation logs:', error);
+        }
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -49,9 +59,13 @@ export default function Automation() {
         const loadData = async () => {
             await fetchDevices();
             await fetchRules();
+            await fetchLogs();
         };
         loadData();
-    }, [navigate]);
+
+        const interval = setInterval(fetchLogs, 15000);
+        return () => clearInterval(interval);
+    }, [navigate, fetchDevices, fetchLogs, fetchRules]);
 
     const toggleRule = async (id) => {
         try {
@@ -61,6 +75,7 @@ export default function Automation() {
                     rule.id === id ? { ...rule, enabled: !rule.enabled } : rule
                 )
             );
+            fetchLogs();
         } catch (error) {
             console.error('Error toggling rule:', error);
         }
@@ -78,6 +93,7 @@ export default function Automation() {
                 setAutomationRules(rules => rules.filter(rule => rule.id !== ruleToDelete));
                 setShowDeleteModal(false);
                 setRuleToDelete(null);
+                fetchLogs();
             } catch (error) {
                 console.error('Error deleting rule:', error);
             }
@@ -109,6 +125,15 @@ export default function Automation() {
         }
     };
 
+    const todayCount = automationLogs.filter((log) => {
+        const ts = new Date(log.timestamp || log.time);
+        if (Number.isNaN(ts.getTime())) return false;
+        const now = new Date();
+        return ts.getFullYear() === now.getFullYear()
+            && ts.getMonth() === now.getMonth()
+            && ts.getDate() === now.getDate();
+    }).length;
+
     const handleAddRule = async (e) => {
         e.preventDefault();
 
@@ -135,6 +160,7 @@ export default function Automation() {
                 icon
             });
             setAutomationRules([...automationRules, res.data.rule]);
+            fetchLogs();
             setShowAddRule(false);
             setNewRule({
                 name: '', triggerType: 'time', triggerTime: '', triggerOperator: '<',
@@ -195,7 +221,7 @@ export default function Automation() {
                             </div>
                         </div>
                         <h3 className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-1">Срабатываний за сегодня</h3>
-                        <p className="text-3xl font-bold text-text-main-light dark:text-text-main-dark">12</p>
+                        <p className="text-3xl font-bold text-text-main-light dark:text-text-main-dark">{todayCount}</p>
                     </div>
                 </div>
 
@@ -205,6 +231,7 @@ export default function Automation() {
                         const trigger = parseTrigger(rule.trigger);
                         const action = parseAction(rule.action);
                         const targetDevice = devices.find(d => d.id === action.deviceId);
+                        const actionStatus = typeof action.status === 'boolean' ? action.status : action.setStatus;
 
                         return (
                             <div key={rule.id} className={`bg-white dark:bg-card-dark rounded-2xl p-6 shadow-sm border transition-all ${rule.enabled
@@ -262,7 +289,7 @@ export default function Automation() {
                                             <span className="text-text-muted-light dark:text-text-muted-dark block text-xs">Если</span>
                                             <span className="font-medium text-text-main-light dark:text-text-main-dark">
                                                 {trigger.type === 'time'
-                                                    ? `Время: ${trigger.value}`
+                                                    ? `Время: ${trigger.time || trigger.value}`
                                                     : `Температура ${trigger.operator === '>' ? 'больше' : 'меньше'} ${trigger.value}°C`
                                                 }
                                             </span>
@@ -283,11 +310,11 @@ export default function Automation() {
                                             <span className="text-text-muted-light dark:text-text-muted-dark block text-xs">То</span>
                                             <div className="font-medium text-text-main-light dark:text-text-main-dark flex items-center gap-1">
                                                 <span>{targetDevice?.name || 'Устройство'}</span>
-                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${action.status
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${actionStatus
                                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                                                     }`}>
-                                                    {action.status ? 'ВКЛ' : 'ВЫКЛ'}
+                                                    {actionStatus ? 'ВКЛ' : 'ВЫКЛ'}
                                                 </span>
                                             </div>
                                         </div>

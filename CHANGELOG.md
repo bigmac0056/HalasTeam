@@ -9,6 +9,17 @@
 - **UI**: Localized "Active Devices" text in Dashboard.
 - **Legal**: Refactored Landing page footer to remove large legal blocks.
 - **Legal**: Added "Terms & Privacy" disclaimer links to Login and Register pages.
+- **Automation (P0)**: Scheduler now supports both legacy/new rule schema (`trigger.time/value`, `action.status/setStatus`) and returns executed actions for manual debug trigger.
+- **Security Demo (P0)**: Added sensor event engine (smoke/water leak/motion) with chain `sensor -> auto-action -> notification -> automation log`, including anti-spam cooldown.
+- **Reports (P0)**: Unified report calculation with Energy calculator via `consumptionKwh` parameter for preview/PDF/email consistency.
+- **PDF (P0)**: Hardened font fallback to prevent `Unknown font format` from breaking download/email report generation.
+- **Energy (P1)**: Added period comparison block (current vs previous period) and room-based consumption breakdown.
+- **Automation (P1)**: Replaced hardcoded "12 triggers today" with real log-based counter.
+- **Dashboard (P1)**: Added one-click quick action `Выключить всё`.
+- **AI (P1)**: Added backend endpoint `/ai/status` with structured sections `new / applied / effect`.
+- **Energy (P1)**: Added visible AI status cards (`Новые / Применено / Эффект`) and "recently applied" list.
+- **Dashboard (P1)**: Added separate quick buttons `Я ушел` and `Ночь`.
+- **Dashboard (P1)**: Added AI status summary in SmartSphere AI sidebar widget.
 
 ## [1.5.0] - 2026-02-15
 ### Added

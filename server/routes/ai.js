@@ -24,6 +24,16 @@ router.get('/actions', async (req, res) => {
     }
 });
 
+router.get('/status', async (req, res) => {
+    try {
+        const lookbackDays = parseInt(req.query.lookbackDays, 10) || 30;
+        const status = await aiService.getRecommendationsStatus(req.user.id, lookbackDays);
+        res.json(status);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/recommendations/:id/apply', async (req, res) => {
     try {
         const result = await aiService.applyRecommendation(req.user.id, req.params.id);

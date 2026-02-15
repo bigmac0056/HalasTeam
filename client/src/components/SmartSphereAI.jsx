@@ -1,6 +1,11 @@
 import { useState } from 'react';
 
 const SCENARIOS = ['Прибытие домой', 'Ночной режим', 'Ушел из дома', 'Отпуск'];
+const DEFAULT_AI_STATUS = {
+  new: { count: 0, items: [] },
+  applied: { count: 0, items: [] },
+  effect: { successfulActions: 0, estimatedSavedKwhMonth: 0, estimatedSavedKztMonth: 0 }
+};
 
 const SmartSphereAI = ({
   autoPilot = false,
@@ -13,7 +18,8 @@ const SmartSphereAI = ({
   onRefreshRecommendations,
   onApplyRecommendation,
   onDismissRecommendation,
-  actions = []
+  actions = [],
+  aiStatus = DEFAULT_AI_STATUS
 }) => {
   const [isScenarioOpen, setIsScenarioOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -75,6 +81,26 @@ const SmartSphereAI = ({
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
         ИИ анализирует ваши привычки для оптимизации комфорта и энергосбережения в реальном времени.
       </p>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 p-2 text-center">
+          <p className="text-[10px] uppercase tracking-wide font-bold text-slate-400">Новые</p>
+          <p className="text-lg font-black text-slate-900 dark:text-white">{aiStatus?.new?.count || 0}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 p-2 text-center">
+          <p className="text-[10px] uppercase tracking-wide font-bold text-slate-400">Применено</p>
+          <p className="text-lg font-black text-slate-900 dark:text-white">{aiStatus?.applied?.count || 0}</p>
+        </div>
+        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 p-2 text-center">
+          <p className="text-[10px] uppercase tracking-wide font-bold text-emerald-500">Эффект</p>
+          <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">
+            {(Number(aiStatus?.effect?.estimatedSavedKwhMonth || 0)).toFixed(1)} кВт·ч
+          </p>
+          <p className="text-[10px] font-semibold text-emerald-500">
+            ~{Math.round(Number(aiStatus?.effect?.estimatedSavedKztMonth || 0))} ₸/мес
+          </p>
+        </div>
+      </div>
 
       <div className="space-y-4">
         {/* Toggle Option */}
