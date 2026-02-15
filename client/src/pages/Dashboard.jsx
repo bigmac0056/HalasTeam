@@ -28,17 +28,57 @@ const scenarioToMode = {
 
 const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 'Коридор'];
 const DEFAULT_WEATHER_COORDS = { lat: 51.1694, lon: 71.4491 };
+const WEATHER_REFRESH_MS = 5 * 60 * 1000;
 
 const createClientWeatherFallback = (city = 'Астана') => {
   const hour = new Date().getHours();
   const isDay = hour >= 7 && hour < 20;
 
   return {
-    temperature: 22,
+    temperature: 20,
     windspeed: 0,
     weathercode: isDay ? 2 : 0,
     isDay,
-    city
+    city,
+    source: 'client-fallback',
+    isFallback: true,
+    fetchedAt: new Date().toISOString()
+  };
+};
+
+const fetchWeatherDirectFromBrowser = async (lat, lon, city = 'Ваш регион') => {
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    current: 'temperature_2m,wind_speed_10m,weather_code,is_day',
+    timezone: 'auto'
+  });
+
+  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Direct weather fetch failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const current = data?.current || data?.current_weather;
+  const temperature = Number(current?.temperature_2m ?? current?.temperature);
+  if (!Number.isFinite(temperature)) {
+    throw new Error('Direct weather has no temperature');
+  }
+
+  const windspeed = Number(current?.wind_speed_10m ?? current?.windspeed);
+  const weathercode = Number(current?.weather_code ?? current?.weathercode);
+  const isDay = Number(current?.is_day) === 1;
+
+  return {
+    temperature,
+    windspeed: Number.isFinite(windspeed) ? windspeed : 0,
+    weathercode: Number.isFinite(weathercode) ? weathercode : 2,
+    isDay,
+    city,
+    source: 'open-meteo-direct',
+    isFallback: false,
+    fetchedAt: new Date().toISOString()
   };
 };
 
@@ -65,6 +105,7 @@ export default function Dashboard() {
 
   const navigate = useNavigate();
   const brightnessTimerRef = useRef({});
+  const weatherCoordsRef = useRef(DEFAULT_WEATHER_COORDS);
   const {
     playback,
     isBusy: isMusicPlaybackUpdating,
@@ -237,6 +278,8 @@ export default function Dashboard() {
   }, [navigate, syncFromBackend]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadWeather = async (lat, lon) => {
       try {
         const res = await API.get('/weather', {
@@ -244,25 +287,57 @@ export default function Dashboard() {
         });
         const weatherData = res.data || {};
         const hasTemperature = Number.isFinite(Number(weatherData.temperature ?? weatherData.temp));
-        setWeather(hasTemperature ? weatherData : createClientWeatherFallback(weatherData.city || 'Астана'));
+
+        if (hasTemperature && !weatherData.isFallback) {
+          if (isMounted) setWeather(weatherData);
+          return;
+        }
+
+        const directWeather = await fetchWeatherDirectFromBrowser(lat, lon, weatherData.city || 'Ваш регион');
+        if (isMounted) {
+          setWeather({
+            ...directWeather,
+            city: weatherData.city || directWeather.city
+          });
+        }
       } catch (error) {
         console.error('Error loading weather:', error);
-        setWeather(createClientWeatherFallback());
+        try {
+          const directWeather = await fetchWeatherDirectFromBrowser(lat, lon, 'Ваш регион');
+          if (isMounted) setWeather(directWeather);
+        } catch (directError) {
+          console.error('Direct weather fallback failed:', directError);
+          if (isMounted) {
+            setWeather((prev) => prev || createClientWeatherFallback());
+          }
+        }
       }
     };
 
+    const setCoordsAndLoadWeather = async (lat, lon) => {
+      weatherCoordsRef.current = { lat, lon };
+      await loadWeather(lat, lon);
+    };
+
     const loadFallbackWeather = () => {
-      loadWeather(DEFAULT_WEATHER_COORDS.lat, DEFAULT_WEATHER_COORDS.lon);
+      setCoordsAndLoadWeather(DEFAULT_WEATHER_COORDS.lat, DEFAULT_WEATHER_COORDS.lon);
     };
 
     if (!navigator.geolocation) {
       loadFallbackWeather();
-      return;
+      const refreshTimer = setInterval(() => {
+        const { lat, lon } = weatherCoordsRef.current;
+        loadWeather(lat, lon);
+      }, WEATHER_REFRESH_MS);
+      return () => {
+        isMounted = false;
+        clearInterval(refreshTimer);
+      };
     }
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        await loadWeather(pos.coords.latitude, pos.coords.longitude);
+        await setCoordsAndLoadWeather(pos.coords.latitude, pos.coords.longitude);
       },
       () => {
         console.warn('Geolocation disabled. Using fallback weather location.');
@@ -274,6 +349,16 @@ export default function Dashboard() {
         maximumAge: 5 * 60 * 1000
       }
     );
+
+    const refreshTimer = setInterval(() => {
+      const { lat, lon } = weatherCoordsRef.current;
+      loadWeather(lat, lon);
+    }, WEATHER_REFRESH_MS);
+
+    return () => {
+      isMounted = false;
+      clearInterval(refreshTimer);
+    };
   }, []);
 
   const rooms = ['Все', ...new Set([...ROOM_OPTIONS, ...devices.map(d => d.room).filter(Boolean)])];
