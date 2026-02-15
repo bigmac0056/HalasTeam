@@ -28,6 +28,7 @@ model UserSettings {
   id        String   @id @default(uuid())
   userId    String   @unique
   homeMode  String   @default("Home") // Home, Away, Night, Vacation
+  autopilotEnabled Boolean @default(false)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState('Все');
   const [homeMode, setHomeMode] = useState('Home');
+  const [autoPilotEnabled, setAutoPilotEnabled] = useState(false);
+  const [isAutoPilotUpdating, setIsAutoPilotUpdating] = useState(false);
   const [automationLog, setAutomationLog] = useState([]);
 
   // Add device form state
@@ -43,6 +45,16 @@ export default function Dashboard() {
       setHomeMode(res.data.mode);
     } catch (error) {
       console.error('Error fetching home mode:', error);
+    }
+  };
+
+  const fetchAutopilotState = async () => {
+    try {
+      const res = await API.get('/settings/autopilot');
+      setAutoPilotEnabled(Boolean(res.data?.enabled));
+    } catch (error) {
+      console.error('Error fetching autopilot state:', error);
+      setAutoPilotEnabled(false);
     }
   };
 
@@ -83,6 +95,19 @@ export default function Dashboard() {
     }
   };
 
+  const updateAutoPilot = async (enabled) => {
+    setIsAutoPilotUpdating(true);
+    try {
+      const res = await API.post('/settings/autopilot', { enabled });
+      setAutoPilotEnabled(Boolean(res.data?.enabled));
+      fetchAutomationLogs();
+    } catch (error) {
+      console.error('Error updating autopilot state:', error);
+    } finally {
+      setIsAutoPilotUpdating(false);
+    }
+  };
+
   const addDevice = async (e) => {
     e.preventDefault();
     try {
@@ -103,6 +128,7 @@ export default function Dashboard() {
     const timer = setTimeout(() => {
       fetchDevices();
       fetchHomeMode();
+      fetchAutopilotState();
       fetchAutomationLogs();
     }, 0);
 
@@ -262,7 +288,11 @@ export default function Dashboard() {
 
           {/* Sidebar Area */}
           <aside className="w-full lg:w-80 space-y-8">
-            <SmartSphereAI />
+            <SmartSphereAI
+              autoPilot={autoPilotEnabled}
+              onToggleAutoPilot={updateAutoPilot}
+              isAutoPilotUpdating={isAutoPilotUpdating}
+            />
 
             {/* Automation Logs Sidebar version */}
             <div className="bg-white dark:bg-card-dark rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm transition-all h-fit">

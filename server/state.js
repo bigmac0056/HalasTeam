@@ -207,6 +207,34 @@ const getHomeMode = async (userId) => {
   }
 };
 
+const getAutopilotEnabled = async (userId) => {
+  try {
+    if (!userId) return false;
+    const settings = await prisma.userSettings.findUnique({ where: { userId } });
+    return settings ? settings.autopilotEnabled : false;
+  } catch (error) {
+    console.error('Error in getAutopilotEnabled:', error);
+    return false;
+  }
+};
+
+const setAutopilotEnabled = async (userId, enabled) => {
+  const boolValue = Boolean(enabled);
+  const settings = await prisma.userSettings.upsert({
+    where: { userId },
+    update: { autopilotEnabled: boolValue },
+    create: { userId, autopilotEnabled: boolValue }
+  });
+
+  await addAutomationLog({
+    userId,
+    message: `Автопилот ${boolValue ? 'включен' : 'выключен'}`,
+    metadata: JSON.stringify({ source: 'settings', type: 'autopilot', enabled: boolValue })
+  });
+
+  return settings.autopilotEnabled;
+};
+
 const setHomeMode = async (userId, mode) => {
   const settings = await prisma.userSettings.upsert({
     where: { userId },
@@ -295,5 +323,7 @@ module.exports = {
   markNotificationAsRead,
   clearNotifications,
   getHomeMode,
-  setHomeMode
+  setHomeMode,
+  getAutopilotEnabled,
+  setAutopilotEnabled
 };
