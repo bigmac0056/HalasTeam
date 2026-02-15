@@ -8,6 +8,7 @@ vi.mock('../api/api', () => ({
         get: vi.fn(() => Promise.resolve({ data: {} })),
         post: vi.fn(() => Promise.resolve({ data: {} })),
         put: vi.fn(() => Promise.resolve({ data: {} })),
+        patch: vi.fn(() => Promise.resolve({ data: {} })),
         delete: vi.fn(() => Promise.resolve({ data: {} })),
         interceptors: {
             request: { use: vi.fn() },
@@ -31,7 +32,7 @@ describe('Login Page', () => {
         );
 
         // Check for email input by placeholder
-        const emailInput = screen.getByPlaceholderText('you@example.com');
+        const emailInput = screen.getByPlaceholderText('name@example.com');
         expect(emailInput).toBeInTheDocument();
 
         // Check for password input by placeholder
@@ -62,7 +63,8 @@ describe('Login Page', () => {
             </MemoryRouter>
         );
 
-        const branding = screen.getByText(/SmartSphere/i);
-        expect(branding).toBeInTheDocument();
+        // Use getAllByText to handle multiple occurrences
+        const branding = screen.getAllByText(/SmartSphere/i);
+        expect(branding.length).toBeGreaterThan(0);
     });
 });

@@ -318,7 +318,7 @@ export default function Dashboard() {
                 className="bg-[#0f172a] hover:bg-slate-800 text-white px-8 py-3.5 rounded-2xl font-bold shadow-xl transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <span className="material-icons-round text-xl">add_circle</span>
-                Add Device
+                Добавить устройство
               </button>
             </div>
 
@@ -391,33 +391,33 @@ export default function Dashboard() {
       {showAddDevice && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-card-dark rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-white/10 animate-fade-in-up">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">New Device</h2>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">Новое устройство</h2>
             <form onSubmit={addDevice} className="space-y-6">
-              <input type="text" placeholder="Device Name" value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
-              <input type="text" placeholder="Room" value={room} onChange={e => setRoom(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
+              <input type="text" placeholder="Название устройства" value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
+              <input type="text" placeholder="Комната" value={room} onChange={e => setRoom(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
               <select value={type} onChange={e => setType(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required>
-                <option value="">Select Type</option>
-                <option value="Light">Light</option>
-                <option value="Socket">Socket</option>
-                <option value="Heater">Heater</option>
-                <option value="AC">Air Conditioner</option>
-                <option value="Speaker">Speaker</option>
-                <option value="Camera">Camera</option>
-                <option value="Sensor">Sensor</option>
+                <option value="">Выберите тип</option>
+                <option value="Light">Свет</option>
+                <option value="Socket">Розетка</option>
+                <option value="Heater">Обогреватель</option>
+                <option value="AC">Кондиционер</option>
+                <option value="Speaker">Колонка</option>
+                <option value="Camera">Камера</option>
+                <option value="Sensor">Датчик</option>
               </select>
 
               {type === 'Sensor' && (
                 <select value={sensorType} onChange={e => setSensorType(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required>
-                  <option value="">Select Sensor Type</option>
-                  <option value="temperature">Temperature</option>
-                  <option value="motion">Motion</option>
-                  <option value="smoke">Smoke Detector</option>
-                  <option value="waterLeak">Water Leak</option>
+                  <option value="">Выберите тип датчика</option>
+                  <option value="temperature">Температура</option>
+                  <option value="motion">Движение</option>
+                  <option value="smoke">Дым</option>
+                  <option value="waterLeak">Протечка воды</option>
                 </select>
               )}
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowAddDevice(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20">Create</button>
+                <button type="button" onClick={() => setShowAddDevice(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-colors">Отмена</button>
+                <button type="submit" className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20">Добавить</button>
               </div>
             </form>
           </div>

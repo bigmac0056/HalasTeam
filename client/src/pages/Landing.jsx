@@ -6,7 +6,67 @@ export default function Landing() {
     document.documentElement.classList.contains('dark') ||
     localStorage.getItem('theme') === 'dark'
   );
+  const [footerModal, setFooterModal] = useState(null);
   const isLoggedIn = !!localStorage.getItem('token');
+
+  const footerContent = {
+    features: {
+      title: 'Функции',
+      text: 'SmartSphere объединяет управление устройствами, автоматизацию сценариев, уведомления и энергоаналитику в одном интерфейсе.'
+    },
+    integrations: {
+      title: 'Интеграции',
+      text: 'Поддерживаются интеграции с погодными сервисами, Google OAuth и архитектура под расширение IoT-устройств.'
+    },
+    pricing: {
+      title: 'Цены',
+      text: 'На этапе MVP проект доступен бесплатно для демонстрации и тестирования. В будущем возможны тарифные планы.'
+    },
+    updates: {
+      title: 'Обновления',
+      text: 'История изменений проекта и последние улучшения публикуются в репозитории GitHub команды.'
+    },
+    docs: {
+      title: 'Документация',
+      text: 'Документация содержит архитектуру, запуск, env-переменные и ограничения MVP.'
+    },
+    api: {
+      title: 'API',
+      text: 'REST API включает модули auth, devices, automation, notifications, weather, analytics и settings.'
+    },
+    community: {
+      title: 'Сообщество',
+      text: 'Для предложений и баг-репортов используйте Issues в GitHub репозитории.'
+    },
+    blog: {
+      title: 'Блог',
+      text: 'Новости проекта и важные релизные заметки публикуются в разделе релизов GitHub.'
+    },
+    about: {
+      title: 'О нас',
+      text: 'HalasTeam развивает SmartSphere как понятную и реалистичную платформу для умного дома под задачи хакатона и MVP.'
+    },
+    career: {
+      title: 'Карьера',
+      text: 'Если хотите присоединиться к проекту, напишите нам на почту команды и укажите ваши навыки.'
+    },
+    contacts: {
+      title: 'Контакты',
+      text: 'Связаться с командой можно через email: halasteam.project@gmail.com'
+    },
+    partners: {
+      title: 'Партнеры',
+      text: 'Открыты к сотрудничеству для интеграций устройств, пилотов и совместных продуктовых экспериментов.'
+    },
+    terms: {
+      title: 'Условия использования',
+      text: 'Используя SmartSphere, вы принимаете правила безопасного и добросовестного использования сервиса и его API.'
+    },
+    privacy: {
+      title: 'Конфиденциальность',
+      text: 'Мы обрабатываем только необходимые данные для авторизации и управления устройствами в рамках функционала платформы.'
+    }
+  };
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -225,8 +285,10 @@ export default function Landing() {
                   Делаем умные дома доступными, приватными и мощными для всех.
                 </p>
                 <div className="flex gap-4">
-                  <a href="https://github.com/bigmac0056/HalasTeam" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
-                    <span className="material-icons-round text-lg">facebook</span>
+                  <a href="https://github.com/bigmac0056" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
+                      <path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.2-1.6-1.2-1.6-1-.6.1-.6.1-.6 1.1.1 1.7 1.1 1.7 1.1 1 .1.7 2.7 3.4 1.9.1-.7.4-1.2.7-1.5-2.6-.3-5.4-1.3-5.4-5.8 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3 0 0 .9-.3 3.3 1.2a11.3 11.3 0 0 1 6 0c2.4-1.5 3.3-1.2 3.3-1.2.6 1.5.2 2.7.1 3 .7.8 1.1 1.9 1.1 3.2 0 4.5-2.8 5.5-5.4 5.8.4.3.8 1 .8 2.1v3.1c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z" />
+                    </svg>
                   </a>
                   <a href="mailto:halasteam.project@gmail.com" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
                     <span className="material-icons-round text-lg">alternate_email</span>
@@ -237,59 +299,77 @@ export default function Landing() {
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Продукт</h4>
                 <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                  <li><a className="hover:text-primary transition-colors" href="#features">Функции</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#how-it-works">Интеграции</a></li>
-                  <li><Link className="hover:text-primary transition-colors" to="/register">Цены</Link></li>
-                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam/commits/main" target="_blank" rel="noreferrer">Обновления</a></li>
+                  <li><button type="button" onClick={() => setFooterModal('features')} className="hover:text-primary transition-colors">Функции</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('integrations')} className="hover:text-primary transition-colors">Интеграции</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('pricing')} className="hover:text-primary transition-colors">Цены</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('updates')} className="hover:text-primary transition-colors">Обновления</button></li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Ресурсы</h4>
                 <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam#readme" target="_blank" rel="noreferrer">Документация</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="https://halasteam.onrender.com/" target="_blank" rel="noreferrer">API</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam/issues" target="_blank" rel="noreferrer">Сообщество</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam/releases" target="_blank" rel="noreferrer">Блог</a></li>
+                  <li><button type="button" onClick={() => setFooterModal('docs')} className="hover:text-primary transition-colors">Документация</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('api')} className="hover:text-primary transition-colors">API</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('community')} className="hover:text-primary transition-colors">Сообщество</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('blog')} className="hover:text-primary transition-colors">Блог</button></li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Компания</h4>
                 <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                  <li><a className="hover:text-primary transition-colors" href="#about">О нас</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="mailto:halasteam.project@gmail.com?subject=Карьера%20в%20SmartSphere">Карьера</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="mailto:halasteam.project@gmail.com?subject=Контакт%20SmartSphere">Контакты</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="mailto:halasteam.project@gmail.com?subject=Партнерство%20со%20SmartSphere">Партнеры</a></li>
+                  <li><button type="button" onClick={() => setFooterModal('about')} className="hover:text-primary transition-colors">О нас</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('career')} className="hover:text-primary transition-colors">Карьера</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('contacts')} className="hover:text-primary transition-colors">Контакты</button></li>
+                  <li><button type="button" onClick={() => setFooterModal('partners')} className="hover:text-primary transition-colors">Партнеры</button></li>
                 </ul>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-              <div id="terms" className="scroll-mt-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-5">
-                <h5 className="font-bold text-slate-900 dark:text-white mb-2">Условия использования</h5>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Используя SmartSphere, вы соглашаетесь на безопасное и добросовестное использование сервиса. Для полного текста условий свяжитесь с командой.
-                </p>
-              </div>
-              <div id="privacy" className="scroll-mt-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-5">
-                <h5 className="font-bold text-slate-900 dark:text-white mb-2">Конфиденциальность</h5>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Мы обрабатываем только необходимые данные для работы умного дома и авторизации. Для запросов по данным используйте контакты в футере.
-                </p>
-              </div>
-            </div>
+            {/* Removed large legal blocks as per user request */}
 
             <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-bold">
               <p>© 2026 SmartSphere by HalasTeam. Все права защищены.</p>
               <div className="flex gap-6">
-                <a className="hover:text-primary transition-colors" href="#terms">Условия использования</a>
-                <a className="hover:text-primary transition-colors" href="#privacy">Конфиденциальность</a>
+                <button type="button" onClick={() => setFooterModal('terms')} className="hover:text-primary transition-colors">Условия использования</button>
+                <button type="button" onClick={() => setFooterModal('privacy')} className="hover:text-primary transition-colors">Конфиденциальность</button>
               </div>
             </div>
           </div>
         </footer>
       </div>
+
+      {footerModal && (
+        <div className="fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                {footerContent[footerModal]?.title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setFooterModal(null)}
+                className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+              {footerContent[footerModal]?.text}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setFooterModal(null)}
+                className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

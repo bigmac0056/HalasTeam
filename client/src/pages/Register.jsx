@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API from '../api/api';
 
@@ -8,7 +8,22 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme === 'dark';
+    return document.documentElement.classList.contains('dark');
+  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -38,6 +53,14 @@ export default function Register() {
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}/oauth/google`;
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300 relative">
       {/* Header Overlay */}
@@ -47,9 +70,21 @@ export default function Register() {
             <img src="/logo.png" alt="SmartSphere" className="w-8 h-8 object-contain" />
           </div>
           <span className="text-xl font-bold text-slate-900 dark:text-white">SmartSphere<span className="text-primary">.io</span></span>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="ml-3 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
+          >
+            Назад
+          </button>
         </div>
-        <button className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300">
-          <span className="material-icons-round">dark_mode</span>
+        <button
+          type="button"
+          onClick={() => setIsDark(prev => !prev)}
+          className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300"
+          title={isDark ? 'Светлая тема' : 'Темная тема'}
+        >
+          <span className="material-icons-round">{isDark ? 'light_mode' : 'dark_mode'}</span>
         </button>
       </div>
 

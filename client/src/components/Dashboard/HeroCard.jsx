@@ -1,16 +1,103 @@
-const weatherCodeToUi = (code) => {
+const CLOUD_CODES = [1, 2, 3];
+const FOG_CODES = [45, 48];
+const RAIN_CODES = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82];
+const SNOW_CODES = [71, 73, 75, 77, 85, 86];
+const STORM_CODES = [95, 96, 99];
+
+const weatherCodeToUi = (code, isDay = true) => {
     const num = Number(code);
     if (!Number.isFinite(num)) {
-        return { label: 'Погода', icon: '⛅' };
+        return { label: 'Погода', icon: isDay ? '⛅' : '🌙' };
     }
 
-    if (num === 0) return { label: 'Ясно', icon: '☀️' };
-    if ([1, 2, 3].includes(num)) return { label: 'Облачно', icon: '⛅' };
-    if ([45, 48].includes(num)) return { label: 'Туман', icon: '🌫️' };
-    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(num)) return { label: 'Дождь', icon: '🌧️' };
-    if ([71, 73, 75, 77, 85, 86].includes(num)) return { label: 'Снег', icon: '❄️' };
-    if ([95, 96, 99].includes(num)) return { label: 'Гроза', icon: '⛈️' };
+    if (num === 0) return { label: isDay ? 'Ясно' : 'Ясная ночь', icon: isDay ? '☀️' : '🌙' };
+    if (CLOUD_CODES.includes(num)) return { label: 'Облачно', icon: isDay ? '⛅' : '☁️' };
+    if (FOG_CODES.includes(num)) return { label: 'Туман', icon: '🌫️' };
+    if (RAIN_CODES.includes(num)) return { label: 'Дождь', icon: '🌧️' };
+    if (SNOW_CODES.includes(num)) return { label: 'Снег', icon: '❄️' };
+    if (STORM_CODES.includes(num)) return { label: 'Гроза', icon: '⛈️' };
     return { label: 'Переменно', icon: '🌤️' };
+};
+
+const weatherThemeByCode = (code, isDay = true) => {
+    const num = Number(code);
+    const safeCode = Number.isFinite(num) ? num : null;
+
+    if (!safeCode && !isDay) {
+        return {
+            cardClass: 'bg-gradient-to-br from-[#0c1633] via-[#10285e] to-[#0b1026]',
+            glowClass: 'bg-indigo-400/25'
+        };
+    }
+    if (!safeCode && isDay) {
+        return {
+            cardClass: 'bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600',
+            glowClass: 'bg-cyan-200/35'
+        };
+    }
+
+    if (safeCode === 0) {
+        if (isDay) {
+            return {
+                cardClass: 'bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600',
+                glowClass: 'bg-yellow-300/35'
+            };
+        }
+        return {
+            cardClass: 'bg-gradient-to-br from-[#0b1633] via-[#142b64] to-[#0b1026]',
+            glowClass: 'bg-indigo-300/30'
+        };
+    }
+
+    if (CLOUD_CODES.includes(safeCode)) {
+        return {
+            cardClass: isDay
+                ? 'bg-gradient-to-br from-slate-400 via-slate-500 to-sky-700'
+                : 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900',
+            glowClass: 'bg-slate-300/25'
+        };
+    }
+
+    if (FOG_CODES.includes(safeCode)) {
+        return {
+            cardClass: isDay
+                ? 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600'
+                : 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900',
+            glowClass: 'bg-slate-200/20'
+        };
+    }
+
+    if (RAIN_CODES.includes(safeCode)) {
+        return {
+            cardClass: isDay
+                ? 'bg-gradient-to-br from-blue-500 via-indigo-600 to-slate-700'
+                : 'bg-gradient-to-br from-[#1a2b5f] via-[#202f63] to-[#0b1228]',
+            glowClass: 'bg-blue-300/20'
+        };
+    }
+
+    if (SNOW_CODES.includes(safeCode)) {
+        return {
+            cardClass: isDay
+                ? 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500'
+                : 'bg-gradient-to-br from-sky-700 via-indigo-800 to-slate-900',
+            glowClass: 'bg-cyan-100/30'
+        };
+    }
+
+    if (STORM_CODES.includes(safeCode)) {
+        return {
+            cardClass: 'bg-gradient-to-br from-violet-700 via-indigo-900 to-slate-950',
+            glowClass: 'bg-violet-300/20'
+        };
+    }
+
+    return {
+        cardClass: isDay
+            ? 'bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600'
+            : 'bg-gradient-to-br from-[#0c1633] via-[#10285e] to-[#0b1026]',
+        glowClass: 'bg-blue-300/25'
+    };
 };
 
 const HeroCard = ({ weather, devices = [], notifications = [] }) => {
@@ -18,7 +105,9 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
     const tempNum = Number(rawTemp);
     const safeTemp = Number.isFinite(tempNum) ? Math.round(tempNum) : '--';
 
-    const weatherUi = weatherCodeToUi(weather?.weathercode);
+    const isDay = weather?.isDay ?? true;
+    const weatherUi = weatherCodeToUi(weather?.weathercode, isDay);
+    const weatherTheme = weatherThemeByCode(weather?.weathercode, isDay);
     const city = weather?.city || 'Ваш регион';
     const condition = weather?.condition || weatherUi.label;
 
@@ -50,9 +139,10 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
     }
 
     return (
-        <div className="bg-[#0f172a] dark:bg-[#020617] rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-blue-500/10 animate-fade-in-up">
+        <div className={`${weatherTheme.cardClass} rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-blue-500/20 animate-fade-in-up`}>
             {/* Abstract Background Decor */}
             <div className={`absolute top-0 right-0 w-64 h-64 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none ${cardBgClass}`}></div>
+            <div className={`absolute bottom-0 left-0 w-52 h-52 rounded-full -ml-20 -mb-20 blur-3xl pointer-events-none ${weatherTheme.glowClass}`}></div>
 
             <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>

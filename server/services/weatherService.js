@@ -102,6 +102,7 @@ async function getWeather(lat, lon) {
             latitude: lat,
             longitude: lon,
             current_weather: true,
+            timezone: "auto",
           },
           timeout: 5000,
         }
@@ -115,6 +116,7 @@ async function getWeather(lat, lon) {
       temperature: weather.temperature,
       windspeed: weather.windspeed,
       weathercode: weather.weathercode,
+      isDay: weather.is_day === 1,
       city: city || "Не определен",
     };
   } catch (error) {

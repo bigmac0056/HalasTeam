@@ -42,6 +42,17 @@ jobs:
     defaults:
       run:
         working-directory: server
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smartsphere_test
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -60,9 +71,9 @@ jobs:
         run: npx prisma generate
 
       - name: Run database migration
-        run: npx prisma migrate deploy
+        run: npx prisma db push
         env:
-          DATABASE_URL: file:./test.db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/smartsphere_test
 
       - name: Start server (smoke test)
         run: |
@@ -70,4 +81,4 @@ jobs:
         env:
           PORT: 3000
           JWT_SECRET: ci-test-secret-key
-          DATABASE_URL: file:./test.db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/smartsphere_test

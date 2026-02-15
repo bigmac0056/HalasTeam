@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] - 2026-02-15
+
+### Changed
+- **CI**: Fixed server CI pipeline by adding PostgreSQL service container and updating database migration command.
+- **CI**: Added `test` script to client package.json.
+- **UI**: Updated Header logo styling to remove dark background circle.
+- **UI**: Localized "Active Devices" text in Dashboard.
+- **Legal**: Refactored Landing page footer to remove large legal blocks.
+- **Legal**: Added "Terms & Privacy" disclaimer links to Login and Register pages.
+
+### Fixed
+- **Tests**: Fixed and updated client-side tests for Dashboard and Login pages.
+
 ## [1.4.0] - 2026-02-15
 ### Fixed
 - **CameraCard**: Refactored to sync strictly with backend status. Fixed `srcObject` assignment and `autoPlay` logic.
