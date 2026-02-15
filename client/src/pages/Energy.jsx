@@ -70,6 +70,9 @@ const buildRegionLabel = (city, region) => {
 export default function Energy() {
     const [analytics, setAnalytics] = useState(null);
     const [tariff, setTariff] = useState(null);
+    const [aiRecommendations, setAiRecommendations] = useState([]);
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [aiBusyId, setAiBusyId] = useState(null);
     const [resolvedCity, setResolvedCity] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -86,6 +89,42 @@ export default function Energy() {
     // Location state
     const [coords, setCoords] = useState(null);
     const [locationStatus, setLocationStatus] = useState('locating');
+
+    const fetchAiRecommendations = useCallback(async () => {
+        setIsAiLoading(true);
+        try {
+            const res = await API.get('/ai/recommendations');
+            setAiRecommendations(Array.isArray(res.data) ? res.data : []);
+        } catch (error) {
+            console.error('Failed to load AI recommendations:', error);
+        } finally {
+            setIsAiLoading(false);
+        }
+    }, []);
+
+    const handleApplyAiRecommendation = async (id) => {
+        setAiBusyId(id);
+        try {
+            await API.post(`/ai/recommendations/${id}/apply`);
+            await Promise.all([fetchAiRecommendations(), fetchData()]);
+        } catch (error) {
+            console.error('Failed to apply recommendation:', error);
+        } finally {
+            setAiBusyId(null);
+        }
+    };
+
+    const handleDismissAiRecommendation = async (id) => {
+        setAiBusyId(id);
+        try {
+            await API.post(`/ai/recommendations/${id}/dismiss`);
+            await fetchAiRecommendations();
+        } catch (error) {
+            console.error('Failed to dismiss recommendation:', error);
+        } finally {
+            setAiBusyId(null);
+        }
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -195,6 +234,10 @@ export default function Energy() {
         if (!coords?.lat || !coords?.lon) return;
         fetchData();
     }, [coords, stoveType, occupants, consumptionOverride, periodDays, fetchData]);
+
+    useEffect(() => {
+        fetchAiRecommendations();
+    }, [fetchAiRecommendations]);
 
     // Format currency
     const formatKZT = (val) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT' }).format(val);
@@ -340,6 +383,67 @@ export default function Energy() {
                 </div>
 
                 {/* Tariff Calculator Section */}
+                <div className="bg-white dark:bg-card-dark p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Советы ИИ по экономии</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Практические рекомендации на основе ваших устройств и логов</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={fetchAiRecommendations}
+                            disabled={isAiLoading}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50"
+                        >
+                            {isAiLoading ? 'Обновление...' : 'Обновить'}
+                        </button>
+                    </div>
+
+                    {isAiLoading ? (
+                        <div className="text-sm text-slate-400 animate-pulse">Загрузка рекомендаций...</div>
+                    ) : aiRecommendations.length === 0 ? (
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-sm text-slate-500 dark:text-slate-400">
+                            Пока нет активных рекомендаций. Попробуйте позже или включите больше устройств для анализа.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {aiRecommendations.slice(0, 6).map((rec) => (
+                                <div key={rec.id} className="rounded-2xl border border-slate-100 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800/40">
+                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                        <h3 className="text-base font-bold text-slate-900 dark:text-white">{rec.title}</h3>
+                                        <span className="text-xs font-bold px-2 py-1 rounded-full bg-primary/10 text-primary whitespace-nowrap">
+                                            Приоритет {rec.priority || 1}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">{rec.reason}</p>
+                                    <div className="text-xs font-semibold text-green-600 mb-3">
+                                        Потенциальная экономия: ~{Number(rec.estimatedKwhSaveMonth || 0).toFixed(1)} кВт·ч/мес
+                                        {Number.isFinite(Number(rec.estimatedKztSaveMonth)) ? ` • ~${Number(rec.estimatedKztSaveMonth).toFixed(0)} ₸/мес` : ''}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleApplyAiRecommendation(rec.id)}
+                                            disabled={aiBusyId === rec.id}
+                                            className="flex-1 py-2 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50"
+                                        >
+                                            {aiBusyId === rec.id ? '...' : 'Применить'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDismissAiRecommendation(rec.id)}
+                                            disabled={aiBusyId === rec.id}
+                                            className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold disabled:opacity-50"
+                                        >
+                                            Скрыть
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 <div className="bg-white dark:bg-card-dark p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                     <div className="flex justify-between items-start mb-6">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Калькулятор тарифов (KZ)</h2>

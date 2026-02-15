@@ -116,6 +116,9 @@ export default function Dashboard() {
   const [isAutoPilotUpdating, setIsAutoPilotUpdating] = useState(false);
   const [automationLog, setAutomationLog] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [aiRecommendations, setAiRecommendations] = useState([]);
+  const [aiActions, setAiActions] = useState([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
 
@@ -187,6 +190,45 @@ export default function Dashboard() {
     }
   };
 
+  const fetchAiRecommendations = async () => {
+    setIsAiLoading(true);
+    try {
+      const res = await API.get('/ai/recommendations');
+      setAiRecommendations(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error('Error fetching AI recommendations:', error);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const fetchAiActions = async () => {
+    try {
+      const res = await API.get('/ai/actions', { params: { limit: 8 } });
+      setAiActions(res.data?.actions || []);
+    } catch (error) {
+      console.error('Error fetching AI actions:', error);
+    }
+  };
+
+  const applyAiRecommendation = async (id) => {
+    try {
+      await API.post(`/ai/recommendations/${id}/apply`);
+      await Promise.all([fetchAiRecommendations(), fetchAiActions(), fetchDevices(), fetchAutomationLogs()]);
+    } catch (error) {
+      console.error('Error applying AI recommendation:', error);
+    }
+  };
+
+  const dismissAiRecommendation = async (id) => {
+    try {
+      await API.post(`/ai/recommendations/${id}/dismiss`);
+      await fetchAiRecommendations();
+    } catch (error) {
+      console.error('Error dismissing AI recommendation:', error);
+    }
+  };
+
 
   const toggleDevice = async (id) => {
     try {
@@ -229,8 +271,7 @@ export default function Dashboard() {
     try {
       await API.post('/settings/mode', { mode });
       setHomeMode(mode);
-      fetchDevices();
-      syncFromBackend();
+      await Promise.all([fetchDevices(), syncFromBackend(), fetchAiRecommendations(), fetchAutomationLogs()]);
     } catch (error) {
       console.error('Error updating home mode:', error);
     }
@@ -241,7 +282,7 @@ export default function Dashboard() {
     try {
       const res = await API.post('/settings/autopilot', { enabled });
       setAutoPilotEnabled(Boolean(res.data?.enabled));
-      fetchAutomationLogs();
+      await Promise.all([fetchAutomationLogs(), fetchAiRecommendations()]);
     } catch (error) {
       console.error('Error updating autopilot state:', error);
     } finally {
@@ -282,7 +323,9 @@ export default function Dashboard() {
           fetchAutopilotState(),
           fetchAutomationLogs(),
           fetchNotifications(),
-          syncFromBackend()
+          syncFromBackend(),
+          fetchAiRecommendations(),
+          fetchAiActions()
         ]);
       } catch (error) {
         console.error("Dashboard init error:", error);
@@ -570,6 +613,12 @@ export default function Dashboard() {
                 const mode = scenarioToMode[scenario];
                 if (mode) updateHomeMode(mode);
               }}
+              recommendations={aiRecommendations}
+              recommendationsLoading={isAiLoading}
+              onRefreshRecommendations={fetchAiRecommendations}
+              onApplyRecommendation={applyAiRecommendation}
+              onDismissRecommendation={dismissAiRecommendation}
+              actions={aiActions}
             />
 
             {/* Automation Logs Sidebar version */}

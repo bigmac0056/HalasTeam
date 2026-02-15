@@ -105,7 +105,14 @@ const generateRecommendations = async (userId) => {
 };
 
 const applyRecommendation = async (userId, recId) => {
-    const rec = await prisma.aiRecommendation.findUnique({ where: { id: recId, userId } });
+    const rec = await prisma.aiRecommendation.findFirst({
+        where: {
+            id: recId,
+            userId,
+            isDismissed: false,
+            isApplied: false
+        }
+    });
     if (!rec) throw new Error('Recommendation not found');
 
     // Safety check
@@ -115,6 +122,8 @@ const applyRecommendation = async (userId, recId) => {
     }
 
     let logDetails = '';
+    let status = 'SUCCESS';
+    let targetDeviceId = rec.targetDeviceId;
 
     if (rec.actionType === 'SET_MODE') {
         await prisma.userSettings.upsert({
@@ -123,8 +132,55 @@ const applyRecommendation = async (userId, recId) => {
             update: { homeMode: 'Night' }
         });
         logDetails = 'Switched to Night Mode';
-    } else if (rec.actionType === 'TOGGLE_DEVICE' && rec.targetDeviceId) {
-        // Not impl for null target yet
+    } else if (rec.actionType === 'TOGGLE_DEVICE') {
+        if (rec.targetDeviceId) {
+            const device = await prisma.device.findFirst({
+                where: { id: rec.targetDeviceId, userId }
+            });
+            if (!device) {
+                throw new Error('Target device not found');
+            }
+            await prisma.device.update({
+                where: { id: device.id },
+                data: { status: !device.status }
+            });
+            logDetails = `Toggled device: ${device.name}`;
+            targetDeviceId = device.id;
+        } else {
+            const activeLight = await prisma.device.findFirst({
+                where: { userId, type: 'Light', status: true },
+                orderBy: { updatedAt: 'desc' }
+            });
+            if (activeLight) {
+                await prisma.device.update({
+                    where: { id: activeLight.id },
+                    data: { status: false }
+                });
+                logDetails = `Turned off light: ${activeLight.name}`;
+                targetDeviceId = activeLight.id;
+            } else {
+                logDetails = 'No active lights found for auto action';
+                status = 'FAILED';
+            }
+        }
+    } else if (rec.actionType === 'SET_TEMP' && rec.targetDeviceId) {
+        const device = await prisma.device.findFirst({
+            where: { id: rec.targetDeviceId, userId }
+        });
+
+        if (device) {
+            const currentValue = Number(device.value || 24);
+            const nextValue = Math.max(18, currentValue - 1);
+            await prisma.device.update({
+                where: { id: device.id },
+                data: { value: nextValue }
+            });
+            logDetails = `Lowered temperature for ${device.name} to ${nextValue}°C`;
+            targetDeviceId = device.id;
+        } else {
+            status = 'FAILED';
+            logDetails = 'Target temperature device not found';
+        }
     }
 
     // Mark as applied
@@ -138,21 +194,32 @@ const applyRecommendation = async (userId, recId) => {
         data: {
             userId,
             actionType: rec.actionType,
-            targetDeviceId: rec.targetDeviceId,
+            targetDeviceId,
             details: logDetails || rec.reason,
-            status: 'SUCCESS'
+            status
         }
     });
 
-    return { success: true };
+    return { success: status === 'SUCCESS', status };
 };
 
 const dismissRecommendation = async (userId, recId) => {
-    await prisma.aiRecommendation.update({
+    const updateResult = await prisma.aiRecommendation.updateMany({
         where: { id: recId, userId },
         data: { isDismissed: true }
     });
+    if (updateResult.count === 0) {
+        throw new Error('Recommendation not found');
+    }
     return { success: true };
 };
 
-module.exports = { generateRecommendations, applyRecommendation, dismissRecommendation };
+const getActionLogs = async (userId, limit = 10) => {
+    return prisma.aiActionLog.findMany({
+        where: { userId },
+        orderBy: { timestamp: 'desc' },
+        take: Math.min(Math.max(Number(limit) || 10, 1), 50)
+    });
+};
+
+module.exports = { generateRecommendations, applyRecommendation, dismissRecommendation, getActionLogs };

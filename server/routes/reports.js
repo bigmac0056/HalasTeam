@@ -4,6 +4,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const pdfService = require('../services/pdfService');
 const emailService = require('../services/emailService');
 const TariffService = require('../services/tariffService');
+const aiService = require('../services/aiAdvisorService');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -72,11 +73,18 @@ const getReportData = async (userId, periodDays, options = {}) => {
         .sort((a, b) => b.kwh - a.kwh)
         .slice(0, 5);
 
-    // Get active recommendations
-    const recommendations = await prisma.aiRecommendation.findMany({
-        where: { userId, isDismissed: false, isApplied: false },
-        take: 3
-    });
+    // Refresh and return active AI recommendations so report is always up-to-date
+    let recommendations = [];
+    try {
+        recommendations = await aiService.generateRecommendations(userId);
+    } catch (error) {
+        console.error('AI recommendations refresh failed during report generation:', error.message);
+        recommendations = await prisma.aiRecommendation.findMany({
+            where: { userId, isDismissed: false, isApplied: false },
+            orderBy: { priority: 'desc' },
+            take: 3
+        });
+    }
 
     return {
         periodDays,
@@ -84,7 +92,7 @@ const getReportData = async (userId, periodDays, options = {}) => {
         totalCost,
         avgDaily,
         topConsumers,
-        recommendations,
+        recommendations: recommendations.slice(0, 5),
         tariff: tariff
             ? {
                 city: tariff.city,

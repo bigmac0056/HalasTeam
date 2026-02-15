@@ -14,10 +14,20 @@ router.get('/recommendations', async (req, res) => {
     }
 });
 
+router.get('/actions', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const actions = await aiService.getActionLogs(req.user.id, limit);
+        res.json({ actions });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/recommendations/:id/apply', async (req, res) => {
     try {
-        await aiService.applyRecommendation(req.user.id, req.params.id);
-        res.json({ success: true });
+        const result = await aiService.applyRecommendation(req.user.id, req.params.id);
+        res.json({ success: true, result });
     } catch (e) {
         res.status(400).json({ error: e.message });
     }

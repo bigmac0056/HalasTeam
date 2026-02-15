@@ -7,13 +7,51 @@ const SmartSphereAI = ({
   onToggleAutoPilot,
   isAutoPilotUpdating = false,
   scenario = 'Прибытие домой',
-  onScenarioSelect
+  onScenarioSelect,
+  recommendations = [],
+  recommendationsLoading = false,
+  onRefreshRecommendations,
+  onApplyRecommendation,
+  onDismissRecommendation,
+  actions = []
 }) => {
   const [isScenarioOpen, setIsScenarioOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [busyRecId, setBusyRecId] = useState(null);
 
   const handleScenarioClick = (value) => {
     if (onScenarioSelect) onScenarioSelect(value);
     setIsScenarioOpen(false);
+  };
+
+  const handleRefresh = async () => {
+    if (!onRefreshRecommendations) return;
+    setIsRefreshing(true);
+    try {
+      await onRefreshRecommendations();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleApply = async (id) => {
+    if (!onApplyRecommendation) return;
+    setBusyRecId(id);
+    try {
+      await onApplyRecommendation(id);
+    } finally {
+      setBusyRecId(null);
+    }
+  };
+
+  const handleDismiss = async (id) => {
+    if (!onDismissRecommendation) return;
+    setBusyRecId(id);
+    try {
+      await onDismissRecommendation(id);
+    } finally {
+      setBusyRecId(null);
+    }
   };
 
   return (
@@ -87,6 +125,84 @@ const SmartSphereAI = ({
                 </button>
               ))}
             </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs uppercase tracking-wide font-bold text-slate-400">Рекомендации ИИ</p>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={recommendationsLoading || isRefreshing}
+            className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+          >
+            {recommendationsLoading || isRefreshing ? 'Обновление...' : 'Обновить'}
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {recommendationsLoading ? (
+            <div className="text-xs text-slate-400 animate-pulse">Загрузка рекомендаций...</div>
+          ) : recommendations.length === 0 ? (
+            <div className="text-xs text-slate-400">Рекомендаций пока нет. Нажмите "Обновить".</div>
+          ) : (
+            recommendations.slice(0, 3).map((rec) => (
+              <div key={rec.id} className="rounded-xl border border-slate-100 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/40">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{rec.title}</p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    P{rec.priority || 1}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">{rec.reason}</p>
+                <div className="text-[11px] font-semibold text-green-600 mb-2">
+                  Экономия ~{Number(rec.estimatedKwhSaveMonth || 0).toFixed(1)} кВт·ч/мес
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleApply(rec.id)}
+                    disabled={busyRecId === rec.id}
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50"
+                  >
+                    Применить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDismiss(rec.id)}
+                    disabled={busyRecId === rec.id}
+                    className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold disabled:opacity-50"
+                  >
+                    Скрыть
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+        <p className="text-xs uppercase tracking-wide font-bold text-slate-400 mb-2">Действия ИИ</p>
+        <div className="space-y-2 max-h-36 overflow-auto pr-1">
+          {actions.length === 0 ? (
+            <div className="text-xs text-slate-400">Пока нет примененных действий</div>
+          ) : (
+            actions.slice(0, 4).map((action) => (
+              <div key={action.id} className="text-xs rounded-lg bg-slate-50 dark:bg-slate-800/40 p-2 border border-slate-100 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`font-semibold ${action.status === 'SUCCESS' ? 'text-green-600' : 'text-amber-600'}`}>
+                    {action.status === 'SUCCESS' ? 'Выполнено' : 'Пропущено'}
+                  </span>
+                  <span className="text-slate-400">
+                    {new Date(action.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-300">{action.details || action.actionType}</p>
+              </div>
+            ))
           )}
         </div>
       </div>
