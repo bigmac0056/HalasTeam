@@ -116,7 +116,7 @@ export default function Landing() {
         </header>
 
         {/* Features Section */}
-        <section className="py-24 bg-white dark:bg-slate-950 px-6 relative">
+        <section id="features" className="py-24 bg-white dark:bg-slate-950 px-6 relative scroll-mt-24">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold mb-4 text-slate-900 dark:text-white">Всё под контролем</h2>
@@ -162,7 +162,7 @@ export default function Landing() {
         </section>
 
         {/* How it works */}
-        <section className="py-24 bg-slate-100 dark:bg-slate-900 px-6">
+        <section id="how-it-works" className="py-24 bg-slate-100 dark:bg-slate-900 px-6 scroll-mt-24">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-12 mb-16">
               <div className="max-w-xl">
@@ -211,7 +211,7 @@ export default function Landing() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 pt-16 pb-8 px-6">
+        <footer id="about" className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 pt-16 pb-8 px-6 scroll-mt-24">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
               <div className="col-span-1 md:col-span-1">
@@ -225,10 +225,10 @@ export default function Landing() {
                   Делаем умные дома доступными, приватными и мощными для всех.
                 </p>
                 <div className="flex gap-4">
-                  <a href="#" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
+                  <a href="https://github.com/bigmac0056/HalasTeam" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
                     <span className="material-icons-round text-lg">facebook</span>
                   </a>
-                  <a href="#" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
+                  <a href="mailto:halasteam.project@gmail.com" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-colors shadow-sm">
                     <span className="material-icons-round text-lg">alternate_email</span>
                   </a>
                 </div>
@@ -237,39 +237,54 @@ export default function Landing() {
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Продукт</h4>
                 <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                  <li><a className="hover:text-primary transition-colors" href="#">Функции</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Интеграции</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Цены</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Обновления</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="#features">Функции</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="#how-it-works">Интеграции</a></li>
+                  <li><Link className="hover:text-primary transition-colors" to="/register">Цены</Link></li>
+                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam/commits/main" target="_blank" rel="noreferrer">Обновления</a></li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Ресурсы</h4>
                 <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                  <li><a className="hover:text-primary transition-colors" href="#">Документация</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">API</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Сообщество</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Блог</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam#readme" target="_blank" rel="noreferrer">Документация</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="https://halasteam.onrender.com/" target="_blank" rel="noreferrer">API</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam/issues" target="_blank" rel="noreferrer">Сообщество</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="https://github.com/bigmac0056/HalasTeam/releases" target="_blank" rel="noreferrer">Блог</a></li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Компания</h4>
                 <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                  <li><a className="hover:text-primary transition-colors" href="#">О нас</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Карьера</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Контакты</a></li>
-                  <li><a className="hover:text-primary transition-colors" href="#">Партнеры</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="#about">О нас</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="mailto:halasteam.project@gmail.com?subject=Карьера%20в%20SmartSphere">Карьера</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="mailto:halasteam.project@gmail.com?subject=Контакт%20SmartSphere">Контакты</a></li>
+                  <li><a className="hover:text-primary transition-colors" href="mailto:halasteam.project@gmail.com?subject=Партнерство%20со%20SmartSphere">Партнеры</a></li>
                 </ul>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+              <div id="terms" className="scroll-mt-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-5">
+                <h5 className="font-bold text-slate-900 dark:text-white mb-2">Условия использования</h5>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Используя SmartSphere, вы соглашаетесь на безопасное и добросовестное использование сервиса. Для полного текста условий свяжитесь с командой.
+                </p>
+              </div>
+              <div id="privacy" className="scroll-mt-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-5">
+                <h5 className="font-bold text-slate-900 dark:text-white mb-2">Конфиденциальность</h5>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Мы обрабатываем только необходимые данные для работы умного дома и авторизации. Для запросов по данным используйте контакты в футере.
+                </p>
               </div>
             </div>
 
             <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-bold">
               <p>© 2026 SmartSphere by HalasTeam. Все права защищены.</p>
               <div className="flex gap-6">
-                <a className="hover:text-primary transition-colors" href="#">Условия использования</a>
-                <a className="hover:text-primary transition-colors" href="#">Конфиденциальность</a>
+                <a className="hover:text-primary transition-colors" href="#terms">Условия использования</a>
+                <a className="hover:text-primary transition-colors" href="#privacy">Конфиденциальность</a>
               </div>
             </div>
           </div>
