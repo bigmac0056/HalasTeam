@@ -29,6 +29,29 @@ const scenarioToMode = {
 const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 'Коридор'];
 const DEFAULT_WEATHER_COORDS = { lat: 51.1694, lon: 71.4491 };
 const WEATHER_REFRESH_MS = 5 * 60 * 1000;
+const LAST_KNOWN_COORDS_KEY = 'smartsphere_last_known_coords';
+
+const readStoredCoords = () => {
+  try {
+    const raw = localStorage.getItem(LAST_KNOWN_COORDS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const lat = Number(parsed?.lat);
+    const lon = Number(parsed?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return { lat, lon };
+  } catch {
+    return null;
+  }
+};
+
+const persistCoords = (lat, lon) => {
+  try {
+    localStorage.setItem(LAST_KNOWN_COORDS_KEY, JSON.stringify({ lat, lon, savedAt: new Date().toISOString() }));
+  } catch {
+    // Ignore storage errors.
+  }
+};
 
 const createClientWeatherFallback = (city = 'Астана') => {
   const hour = new Date().getHours();
@@ -105,7 +128,7 @@ export default function Dashboard() {
 
   const navigate = useNavigate();
   const brightnessTimerRef = useRef({});
-  const weatherCoordsRef = useRef(DEFAULT_WEATHER_COORDS);
+  const weatherCoordsRef = useRef(readStoredCoords() || DEFAULT_WEATHER_COORDS);
   const {
     playback,
     isBusy: isMusicPlaybackUpdating,
@@ -316,11 +339,14 @@ export default function Dashboard() {
 
     const setCoordsAndLoadWeather = async (lat, lon) => {
       weatherCoordsRef.current = { lat, lon };
+      persistCoords(lat, lon);
       await loadWeather(lat, lon);
     };
 
     const loadFallbackWeather = () => {
-      setCoordsAndLoadWeather(DEFAULT_WEATHER_COORDS.lat, DEFAULT_WEATHER_COORDS.lon);
+      const stored = readStoredCoords();
+      const fallbackCoords = stored || DEFAULT_WEATHER_COORDS;
+      setCoordsAndLoadWeather(fallbackCoords.lat, fallbackCoords.lon);
     };
 
     if (!navigator.geolocation) {
@@ -344,9 +370,9 @@ export default function Dashboard() {
         loadFallbackWeather();
       },
       {
-        enableHighAccuracy: false,
-        timeout: 8000,
-        maximumAge: 5 * 60 * 1000
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 10 * 60 * 1000
       }
     );
 

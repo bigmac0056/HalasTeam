@@ -13,6 +13,7 @@ import {
 import API from '../api/api';
 
 const DEFAULT_COORDS = { lat: 51.1694, lon: 71.4491 };
+const LAST_KNOWN_COORDS_KEY = 'smartsphere_last_known_coords';
 const CITY_LABELS = {
     Astana: 'Астана',
     Almaty: 'Алматы',
@@ -29,6 +30,28 @@ const CITY_LABELS = {
 const localizeCity = (value) => {
     if (!value) return '';
     return CITY_LABELS[value] || value;
+};
+
+const readStoredCoords = () => {
+    try {
+        const raw = localStorage.getItem(LAST_KNOWN_COORDS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const lat = Number(parsed?.lat);
+        const lon = Number(parsed?.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        return { lat, lon };
+    } catch {
+        return null;
+    }
+};
+
+const persistCoords = (lat, lon) => {
+    try {
+        localStorage.setItem(LAST_KNOWN_COORDS_KEY, JSON.stringify({ lat, lon, savedAt: new Date().toISOString() }));
+    } catch {
+        // Ignore storage errors.
+    }
 };
 
 const buildRegionLabel = (city, region) => {
@@ -52,9 +75,11 @@ export default function Energy() {
 
     // User inputs for tariff calculation
     const [consumptionOverride, setConsumptionOverride] = useState(null);
+    const [pendingConsumption, setPendingConsumption] = useState(null);
     const [occupants, setOccupants] = useState(1);
     const [stoveType, setStoveType] = useState('electric');
     const [periodDays, setPeriodDays] = useState(30);
+    const [isTariffUpdating, setIsTariffUpdating] = useState(false);
 
     // Location state
     const [coords, setCoords] = useState(null);
@@ -65,7 +90,7 @@ export default function Energy() {
 
         const applyFallbackLocation = () => {
             if (cancelled) return;
-            setCoords(DEFAULT_COORDS);
+            setCoords(readStoredCoords() || DEFAULT_COORDS);
             setLocationStatus('fallback');
         };
 
@@ -73,7 +98,9 @@ export default function Energy() {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     if (cancelled) return;
-                    setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+                    const nextCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    setCoords(nextCoords);
+                    persistCoords(nextCoords.lat, nextCoords.lon);
                     setLocationStatus('ok');
                 },
                 (err) => {
@@ -94,6 +121,17 @@ export default function Energy() {
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        if (pendingConsumption === null) return undefined;
+        setIsTariffUpdating(true);
+
+        const debounceTimer = setTimeout(() => {
+            setConsumptionOverride(pendingConsumption);
+        }, 450);
+
+        return () => clearTimeout(debounceTimer);
+    }, [pendingConsumption]);
 
     const fetchData = useCallback(async () => {
         if (!coords?.lat || !coords?.lon) return;
@@ -147,6 +185,7 @@ export default function Energy() {
             setError(error.response?.data?.error || 'Не удалось загрузить данные по энергопотреблению');
         } finally {
             setLoading(false);
+            setIsTariffUpdating(false);
         }
     }, [coords, stoveType, occupants, consumptionOverride, periodDays]);
 
@@ -169,9 +208,12 @@ export default function Energy() {
     }));
     const displayChartData = chartData.length > 0 ? chartData : [{ name: 'Нет данных', kwh: 0 }];
 
-    const currentConsumption = consumptionOverride !== null
+    const committedConsumption = consumptionOverride !== null
         ? consumptionOverride
         : (analytics?.totalEnergyConsumption || 0);
+    const currentConsumption = pendingConsumption !== null
+        ? pendingConsumption
+        : committedConsumption;
     const periodLabel = periodDays === 0 ? 'за все время' : `за ${periodDays} дн.`;
     const tariffRegionLabel = buildRegionLabel(tariff?.city, tariff?.region);
     const displayRegion = resolvedCity || tariffRegionLabel || (locationStatus === 'locating' ? 'Определение...' : 'Не определен');
@@ -193,6 +235,7 @@ export default function Energy() {
                             onChange={(e) => {
                                 setPeriodDays(Number(e.target.value));
                                 setConsumptionOverride(null);
+                                setPendingConsumption(null);
                             }}
                             className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm text-slate-700 dark:text-slate-200"
                         >
@@ -305,7 +348,11 @@ export default function Energy() {
                                         Потребление для расчета: <span className="text-slate-900 dark:text-white font-bold">{Number(currentConsumption || 0).toFixed(1)} кВт·ч</span>
                                     </label>
                                     <button
-                                        onClick={() => setConsumptionOverride(null)}
+                                        onClick={() => {
+                                            setConsumptionOverride(null);
+                                            setPendingConsumption(null);
+                                            setIsTariffUpdating(false);
+                                        }}
                                         className="text-xs text-primary hover:underline"
                                     >
                                         Сбросить к реальному
@@ -317,9 +364,12 @@ export default function Energy() {
                                     max="1000"
                                     step="10"
                                     value={currentConsumption}
-                                    onChange={(e) => setConsumptionOverride(parseInt(e.target.value))}
+                                    onChange={(e) => setPendingConsumption(parseInt(e.target.value, 10))}
                                     className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                                 />
+                                {isTariffUpdating && (
+                                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 animate-pulse">Пересчет стоимости...</p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-6">
@@ -364,7 +414,7 @@ export default function Energy() {
                                 <div className="text-right">
                                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Расчетная стоимость</p>
                                     <div className="text-3xl font-bold text-primary">
-                                        {hasTariffCost ? formatKZT(tariff.totalCost) : '---'}
+                                        {isTariffUpdating ? '...' : (hasTariffCost ? formatKZT(tariff.totalCost) : '---')}
                                     </div>
                                 </div>
                             </div>
