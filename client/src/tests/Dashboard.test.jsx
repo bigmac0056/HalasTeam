@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { MusicPlayerProvider } from '../context/MusicPlayerContext';
 
 // Mock API module
 vi.mock('../api/api', () => ({
@@ -55,12 +56,18 @@ describe('Dashboard Page', () => {
         setupMocks();
     });
 
-    it('renders add device button', async () => {
+    const renderDashboard = () => (
         render(
             <MemoryRouter>
-                <Dashboard />
+                <MusicPlayerProvider>
+                    <Dashboard />
+                </MusicPlayerProvider>
             </MemoryRouter>
-        );
+        )
+    );
+
+    it('renders add device button', async () => {
+        renderDashboard();
 
         // Should find "Добавить устройство"
         const addButtons = await screen.findAllByText(/Добавить устройство/i);
@@ -68,11 +75,7 @@ describe('Dashboard Page', () => {
     });
 
     it('renders home mode buttons', async () => {
-        render(
-            <MemoryRouter>
-                <Dashboard />
-            </MemoryRouter>
-        );
+        renderDashboard();
 
         const homeBtn = await screen.findByText('Дома');
         const awayBtn = await screen.findByText('Ушел');
@@ -111,11 +114,7 @@ describe('Dashboard Page', () => {
             }
         });
 
-        render(
-            <MemoryRouter>
-                <Dashboard />
-            </MemoryRouter>
-        );
+        renderDashboard();
 
         const deviceName = await screen.findByText('Test Lamp');
         expect(deviceName).toBeInTheDocument();
