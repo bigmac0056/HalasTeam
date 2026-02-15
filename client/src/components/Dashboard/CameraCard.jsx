@@ -4,6 +4,7 @@ const CameraCard = ({ name, room, status, onToggle }) => {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const [isStreaming, setIsStreaming] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const stopStream = useCallback(() => {
@@ -15,30 +16,47 @@ const CameraCard = ({ name, room, status, onToggle }) => {
             videoRef.current.srcObject = null;
         }
         setIsStreaming(false);
-        if (status && onToggle) onToggle(); // Turn OFF if ON
-    }, [status, onToggle]);
+        setIsLoading(false);
+    }, []);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
             stopStream();
         };
-    }, []);
+    }, [stopStream]);
+
+    // React to external status changes
+    useEffect(() => {
+        if (!status && isStreaming) {
+            stopStream();
+        } else if (status && !isStreaming && !isLoading) {
+            startStream();
+        }
+    }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startStream = async () => {
+        setIsLoading(true);
+        setError(null);
         try {
-            setError(null);
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user' },
+                audio: false
+            });
+
             streamRef.current = stream;
+            setIsStreaming(true);
+
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
-            setIsStreaming(true);
-            // Sync status with backend if needed, or just local state for demo
-            if (!status && onToggle) onToggle(); // Turn ON if OFF
         } catch (err) {
             console.error("Camera access error:", err);
-            setError("No camera access");
+            setError("Доступ к камере запрещен");
+            setIsStreaming(false);
+            if (onToggle && status) onToggle();
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -79,12 +97,21 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                             autoPlay
                             playsInline
                             muted
-                            className="w-full h-full object-cover"
+                            onLoadedMetadata={() => {
+                                if (videoRef.current) videoRef.current.play().catch(e => console.error("Play error:", e));
+                            }}
+                            className={`w-full h-full object-cover transition-opacity duration-500 ${isStreaming ? 'opacity-100' : 'opacity-0'}`}
                         />
+
+                        {!isStreaming && !error && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            </div>
+                        )}
 
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
                         <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                            <span className="material-icons-round text-white/80 text-sm">fiber_manual_record</span>
+                            <span className={`material-icons-round text-sm ${isStreaming ? 'text-red-500 animate-pulse' : 'text-white/50'}`}>fiber_manual_record</span>
                             <span className="text-[10px] text-white/80 font-medium">LIVE</span>
                         </div>
                     </>

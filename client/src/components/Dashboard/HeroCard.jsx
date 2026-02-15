@@ -13,7 +13,7 @@ const weatherCodeToUi = (code) => {
     return { label: 'Переменно', icon: '🌤️' };
 };
 
-const HeroCard = ({ weather, devices = [] }) => {
+const HeroCard = ({ weather, devices = [], notifications = [] }) => {
     const rawTemp = weather?.temperature ?? weather?.temp;
     const tempNum = Number(rawTemp);
     const safeTemp = Number.isFinite(tempNum) ? Math.round(tempNum) : '--';
@@ -28,14 +28,31 @@ const HeroCard = ({ weather, devices = [] }) => {
         ? Math.round(tempSensors.reduce((acc, d) => acc + (d.value || 21), 0) / tempSensors.length)
         : 22;
 
-    const activeAlerts = devices.filter(d => d.type === 'Sensor' && (d.value === 1 || d.isAlert));
-    const statusText = activeAlerts.length > 0 ? 'Требует внимания' : 'Оптимальный';
-    const statusColor = activeAlerts.length > 0 ? 'text-orange-400' : 'text-blue-400';
+    // Count unread notifications for "Active Alerts"
+    const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
+
+    // Status depends on critical sensors OR high unread count
+    const criticalSensors = devices.filter(d => d.type === 'Sensor' && (d.value === 1 || d.isAlert));
+
+    // Status Logic: Red if critical sensors, Orange if many notifications, else Blue
+    let statusText = 'Оптимальный';
+    let statusColor = 'text-blue-400';
+    let cardBgClass = 'bg-blue-500/10';
+
+    if (criticalSensors.length > 0) {
+        statusText = 'ТРЕВОГА';
+        statusColor = 'text-red-500 animate-pulse';
+        cardBgClass = 'bg-red-500/20';
+    } else if (unreadNotificationsCount > 0) {
+        statusText = 'Новые события';
+        statusColor = 'text-orange-400';
+        cardBgClass = 'bg-orange-500/20';
+    }
 
     return (
         <div className="bg-[#0f172a] dark:bg-[#020617] rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-blue-500/10 animate-fade-in-up">
             {/* Abstract Background Decor */}
-            <div className={`absolute top-0 right-0 w-64 h-64 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none ${activeAlerts.length > 0 ? 'bg-orange-500/20' : 'bg-blue-500/10'}`}></div>
+            <div className={`absolute top-0 right-0 w-64 h-64 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none ${cardBgClass}`}></div>
 
             <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
@@ -61,7 +78,7 @@ const HeroCard = ({ weather, devices = [] }) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-wider text-blue-200/40 font-bold">Активные уведомления</p>
-                                <p className="text-lg font-bold">{activeAlerts.length}</p>
+                                <p className="text-lg font-bold">{unreadNotificationsCount}</p>
                             </div>
                         </div>
 

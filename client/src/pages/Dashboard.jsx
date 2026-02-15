@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [autoPilotEnabled, setAutoPilotEnabled] = useState(false);
   const [isAutoPilotUpdating, setIsAutoPilotUpdating] = useState(false);
   const [automationLog, setAutomationLog] = useState([]);
+  const [notifications, setNotifications] = useState([]);
 
   // Add device form state
   const [name, setName] = useState('');
@@ -39,6 +40,15 @@ export default function Dashboard() {
       setDevices(Array.isArray(devicesData) ? devicesData.filter(Boolean) : []);
     } catch (error) {
       console.error('Error fetching devices:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await API.get('/notifications');
+      setNotifications(res.data?.notifications || []);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
     }
   };
 
@@ -135,7 +145,8 @@ export default function Dashboard() {
           fetchDevices(),
           fetchHomeMode(),
           fetchAutopilotState(),
-          fetchAutomationLogs()
+          fetchAutomationLogs(),
+          fetchNotifications()
         ]);
       } catch (error) {
         console.error("Dashboard init error:", error);
@@ -146,7 +157,10 @@ export default function Dashboard() {
 
     initDashboard();
 
-    const interval = setInterval(fetchDevices, 10000);
+    const interval = setInterval(() => {
+      fetchDevices();
+      fetchNotifications();
+    }, 10000);
     return () => clearInterval(interval);
   }, [navigate]);
 
@@ -295,7 +309,7 @@ export default function Dashboard() {
             </div>
 
             {/* Hero Section */}
-            <HeroCard weather={weather} />
+            <HeroCard weather={weather} devices={devices} notifications={notifications} />
 
             {/* Room Filter Footer style */}
             <div className="space-y-6">
