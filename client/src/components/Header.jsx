@@ -28,7 +28,7 @@ const Header = () => {
         const fetchProfile = async () => {
             try {
                 const res = await API.get('/profile');
-                setUser(res.data);
+                setUser(res.data || {});
             } catch (error) {
                 console.error("Failed to fetch profile", error);
             }
@@ -45,7 +45,7 @@ const Header = () => {
     const fetchNotifications = async () => {
         try {
             const res = await API.get('/notifications');
-            setNotifications(res.data.notifications);
+            setNotifications(res.data?.notifications || []);
         } catch (error) {
             console.error('Error fetching notifications:', error);
         }

@@ -13,7 +13,6 @@ import CameraCard from '../components/Dashboard/CameraCard';
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   const [weather, setWeather] = useState(null);
-  const [weatherError, setWeatherError] = useState(null);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState('Все');
   const [homeMode, setHomeMode] = useState('Home');
@@ -31,7 +30,8 @@ export default function Dashboard() {
   const fetchDevices = async () => {
     try {
       const res = await API.get('/devices');
-      setDevices(res.data.devices);
+      const devicesData = res.data?.devices;
+      setDevices(Array.isArray(devicesData) ? devicesData.filter(Boolean) : []);
     } catch (error) {
       console.error('Error fetching devices:', error);
     }
@@ -91,6 +91,7 @@ export default function Dashboard() {
       setShowAddDevice(false);
       fetchDevices();
     } catch (error) {
+      console.error('Error adding device:', error);
       alert('Не удалось добавить устройство');
     }
   };
@@ -98,9 +99,14 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { navigate('/login'); return; }
-    fetchDevices();
-    fetchHomeMode();
-    fetchAutomationLogs();
+    // Use setTimeout to avoid synchronous state updates in effect
+    const timer = setTimeout(() => {
+      fetchDevices();
+      fetchHomeMode();
+      fetchAutomationLogs();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [navigate]);
 
   useEffect(() => {
@@ -110,9 +116,13 @@ export default function Dashboard() {
           try {
             const res = await API.get(`/weather?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
             setWeather(res.data);
-          } catch (e) { setWeatherError('Error loading weather'); }
+          } catch (e) {
+            console.error('Error loading weather:', e);
+          }
         },
-        () => setWeatherError('Geolocation disabled')
+        () => {
+          console.warn('Geolocation disabled');
+        }
       );
     }
   }, []);
