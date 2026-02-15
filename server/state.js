@@ -232,6 +232,14 @@ const setAutopilotEnabled = async (userId, enabled) => {
     metadata: JSON.stringify({ source: 'settings', type: 'autopilot', enabled: boolValue })
   });
 
+  await addNotification({
+    userId,
+    title: 'Настройки',
+    message: `Автопилот ${boolValue ? 'включен' : 'выключен'}`,
+    type: 'info',
+    icon: 'smart_toy'
+  });
+
   return settings.autopilotEnabled;
 };
 
@@ -265,6 +273,14 @@ const setHomeMode = async (userId, mode) => {
       metadata: JSON.stringify({ mode, action: 'shutdown', devices: turnedOff })
     });
 
+    await addNotification({
+      userId,
+      title: 'Режим Дома',
+      message: message,
+      type: 'warning',
+      icon: 'home'
+    });
+
     return { homeMode: settings.homeMode, message, turnedOff };
   } else if (mode === 'Night') {
     // Turn off all lights
@@ -285,12 +301,28 @@ const setHomeMode = async (userId, mode) => {
       metadata: JSON.stringify({ mode, action: 'shutdown', devices: turnedOff })
     });
 
+    await addNotification({
+      userId,
+      title: 'Режим Дома',
+      message: message,
+      type: 'info',
+      icon: 'bedtime'
+    });
+
     return { homeMode: settings.homeMode, message, turnedOff };
   } else {
     await addAutomationLog({
       userId,
       message: `Режим "Дома" активирован`,
       metadata: JSON.stringify({ mode })
+    });
+
+    await addNotification({
+      userId,
+      title: 'Режим Дома',
+      message: `Режим "Дома" активирован`,
+      type: 'success',
+      icon: 'home'
     });
   }
 

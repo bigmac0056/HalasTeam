@@ -31,12 +31,22 @@ router.get('/google/callback',
             authCodes.set(code, { token });
             setTimeout(() => authCodes.delete(code), 60000);
 
-            // Redirect with code
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            // Redirect with code - STRICT production check
+            const frontendUrl = process.env.FRONTEND_URL;
+            if (!frontendUrl) {
+                console.error("FATAL: FRONTEND_URL is not defined.");
+                return res.status(500).send("Server Configuration Error: FRONTEND_URL missing");
+            }
+
             res.redirect(`${frontendUrl}/oauth/callback?code=${code}`);
         } catch (error) {
             console.error('OAuth callback error:', error);
-            res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
+            const frontendUrl = process.env.FRONTEND_URL;
+            if (frontendUrl) {
+                res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+            } else {
+                res.status(500).send("OAuth Failed and FRONTEND_URL missing");
+            }
         }
     }
 );

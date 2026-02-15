@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2026-02-15
+### Fixed
+- **CameraCard**: Refactored to sync strictly with backend status. Fixed `srcObject` assignment and `autoPlay` logic.
+- **HeroCard**: "Devices" count now reflects total devices, and "Active Notifications" count uses real unread status.
+- **Notifications**: Added backend notifications for Home Mode and Autopilot changes. Fixed polling and "mark all read" UI.
+- **Theme**: Fixed toggle icon logic to mutually exclusive rendering (Sun OR Moon).
+- **OAuth**: Enforced `FRONTEND_URL` for Google redirects to prevent localhost fallbacks in production.
+
 ## [1.3.0] - 2026-02-15
 ### Added
 - **Notifications Sync**: Implemented real-time notification polling and "Mark as read" functionality.

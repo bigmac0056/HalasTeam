@@ -149,9 +149,9 @@ const Header = () => {
                     <button
                         className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         onClick={toggleDarkMode}
-                        title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        title={isDark ? "Светлая тема" : "Темная тема"}
                     >
-                        {/* Conditional rendering for exact icon control */}
+                        {/* Status: Logic simplified to prevent duplicates */}
                         {isDark ? (
                             <span className="material-icons-round text-xl text-yellow-400">light_mode</span>
                         ) : (

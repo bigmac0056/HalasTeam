@@ -19,23 +19,7 @@ const CameraCard = ({ name, room, status, onToggle }) => {
         setIsLoading(false);
     }, []);
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            stopStream();
-        };
-    }, [stopStream]);
-
-    // React to external status changes
-    useEffect(() => {
-        if (!status && isStreaming) {
-            stopStream();
-        } else if (status && !isStreaming && !isLoading) {
-            startStream();
-        }
-    }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const startStream = async () => {
+    const startStream = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
@@ -45,29 +29,47 @@ const CameraCard = ({ name, room, status, onToggle }) => {
             });
 
             streamRef.current = stream;
-            setIsStreaming(true);
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
+                // Explicit play is handled in onLoadedMetadata, but doing it here defensively too
             }
+            setIsStreaming(true);
         } catch (err) {
             console.error("Camera access error:", err);
             setError("Доступ к камере запрещен");
             setIsStreaming(false);
-            if (onToggle && status) onToggle();
+            // If we failed to start stream but status is ON, we might want to turn it OFF 
+            // to keep UI consistent, but let's just show error for now.
+            // if (onToggle && status) onToggle(); 
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            stopStream();
+        };
+    }, [stopStream]);
 
+    // React to external status changes. This is the SINGLE SOURCE OF TRUTH.
+    useEffect(() => {
+        if (status) {
+            if (!isStreaming && !isLoading && !error) {
+                startStream();
+            }
+        } else {
+            if (isStreaming) {
+                stopStream();
+            }
+        }
+    }, [status, isStreaming, isLoading, error, startStream, stopStream]);
 
     const handleToggle = () => {
-        if (isStreaming) {
-            stopStream();
-        } else {
-            startStream();
-        }
+        // Just notify parent. Parent updates DB -> status prop changes -> useEffect triggers stream.
+        if (onToggle) onToggle();
     };
 
     return (
@@ -78,8 +80,8 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                     <p className="text-xs text-slate-400 mt-1">{room}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${status ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{status ? 'Live' : 'Offline'}</span>
+                    <div className={`w-2 h-2 rounded-full ${status && isStreaming ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{status && isStreaming ? 'Live' : 'Offline'}</span>
                 </div>
             </div>
 
@@ -91,20 +93,21 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                     </div>
                 ) : status ? (
                     <>
-                        {/* Video Element */}
                         <video
                             ref={videoRef}
                             autoPlay
                             playsInline
                             muted
                             onLoadedMetadata={() => {
-                                if (videoRef.current) videoRef.current.play().catch(e => console.error("Play error:", e));
+                                if (videoRef.current) {
+                                    videoRef.current.play().catch(e => console.error("Play error:", e));
+                                }
                             }}
                             className={`w-full h-full object-cover transition-opacity duration-500 ${isStreaming ? 'opacity-100' : 'opacity-0'}`}
                         />
 
-                        {!isStreaming && !error && (
-                            <div className="absolute inset-0 flex items-center justify-center">
+                        {(!isStreaming || isLoading) && !error && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                             </div>
                         )}
@@ -118,11 +121,9 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-slate-600">
                         <span className="material-icons-round text-4xl mb-2">videocam_off</span>
-                        <span className="text-xs font-medium">Camera is disabled</span>
+                        <span className="text-xs font-medium">Камера отключена</span>
                     </div>
                 )}
-
-                {/* Overlay Play Button (Only visible if NOT streaming but has status? Or just use the toggle logic mainly) */}
             </div>
 
             <div className="flex gap-2">
@@ -134,7 +135,7 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                         }`}
                 >
                     <span className="material-icons-round text-sm">{status ? 'stop' : 'videocam'}</span>
-                    {status ? 'Stop Camera' : 'Start Camera'}
+                    {status ? 'Остановить' : 'Запустить'}
                 </button>
             </div>
         </div>
