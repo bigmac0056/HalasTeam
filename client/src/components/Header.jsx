@@ -46,7 +46,8 @@ const Header = () => {
 
     const logout = () => {
         localStorage.removeItem('token');
-        navigate('/login');
+        window.dispatchEvent(new Event('auth-changed'));
+        navigate('/login', { replace: true });
     };
 
     const fetchNotifications = useCallback(async () => {

@@ -32,7 +32,8 @@ export default function Login() {
     try {
       const res = await API.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
-      navigate('/dashboard');
+      window.dispatchEvent(new Event('auth-changed'));
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data?.error || 'Ошибка входа. Проверьте данные.');
@@ -42,15 +43,12 @@ export default function Login() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/oauth/google`;
+    const apiBase = import.meta.env.VITE_API_BASE_URL || API.defaults.baseURL;
+    window.location.href = `${apiBase}/oauth/google`;
   };
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (

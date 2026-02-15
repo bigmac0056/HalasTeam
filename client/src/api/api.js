@@ -18,6 +18,7 @@ API.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.warn("Session expired or unauthorized. Redirecting to login.");
       localStorage.removeItem("token");
+      window.dispatchEvent(new Event('auth-changed'));
       window.location.href = "/login";
     }
     return Promise.reject(error);

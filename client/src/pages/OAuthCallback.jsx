@@ -20,19 +20,20 @@ export default function OAuthCallback() {
                 const res = await API.post('/oauth/google/exchange', { code });
 
                 localStorage.setItem('token', res.data.token);
-                navigate('/dashboard');
+                window.dispatchEvent(new Event('auth-changed'));
+                navigate('/dashboard', { replace: true });
             } catch (err) {
                 console.error('OAuth exchange failed', err);
-                navigate('/login?error=exchange_failed');
+                navigate('/login?error=exchange_failed', { replace: true });
             }
         };
 
         if (code) {
             exchangeCode(code);
         } else if (error) {
-            navigate('/login?error=' + error);
+            navigate('/login?error=' + error, { replace: true });
         } else {
-            navigate('/login');
+            navigate('/login', { replace: true });
         }
     }, [searchParams, navigate]);
 
