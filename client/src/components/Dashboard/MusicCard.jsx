@@ -1,7 +1,16 @@
-import { useState } from 'react';
-
-const MusicCard = ({ name, room, status, currentTrackTitle, onToggle, onDelete }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
+const MusicCard = ({
+    name,
+    room,
+    status,
+    currentTrackTitle,
+    isPlaying = false,
+    onToggle,
+    onDelete,
+    onPlayPause,
+    onNext,
+    onPrev,
+    controlsDisabled = false
+}) => {
     const trackLabel = currentTrackTitle || 'Нет активного трека';
 
     return (
@@ -40,20 +49,35 @@ const MusicCard = ({ name, room, status, currentTrackTitle, onToggle, onDelete }
             </div>
 
             <div className="relative h-1 bg-slate-100 dark:bg-slate-800 rounded-full mb-6 overflow-hidden">
-                <div className="absolute top-0 left-0 h-full bg-pink-500 w-1/3 shadow-[0_0_8px_rgba(236,72,153,0.5)]"></div>
+                <div className={`absolute top-0 left-0 h-full bg-pink-500 transition-all ${isPlaying ? 'w-1/2 shadow-[0_0_8px_rgba(236,72,153,0.5)]' : 'w-1/4'}`}></div>
             </div>
 
             <div className="flex justify-center items-center gap-6">
-                <button className="text-slate-400 hover:text-primary transition-colors">
+                <button
+                    type="button"
+                    onClick={onPrev}
+                    disabled={controlsDisabled}
+                    className="text-slate-400 hover:text-primary transition-colors disabled:opacity-40"
+                    title="Предыдущий"
+                >
                     <span className="material-icons-round text-xl">skip_previous</span>
                 </button>
                 <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="w-12 h-12 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shadow-lg shadow-pink-200 dark:shadow-none hover:scale-110 transition-transform"
+                    type="button"
+                    onClick={onPlayPause}
+                    disabled={controlsDisabled}
+                    className="w-12 h-12 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shadow-lg shadow-pink-200 dark:shadow-none hover:scale-110 transition-transform disabled:opacity-40"
+                    title={isPlaying ? 'Пауза' : 'Воспроизвести'}
                 >
                     <span className="material-icons-round text-2xl">{isPlaying ? 'pause' : 'play_arrow'}</span>
                 </button>
-                <button className="text-slate-400 hover:text-primary transition-colors">
+                <button
+                    type="button"
+                    onClick={onNext}
+                    disabled={controlsDisabled}
+                    className="text-slate-400 hover:text-primary transition-colors disabled:opacity-40"
+                    title="Следующий"
+                >
                     <span className="material-icons-round text-xl">skip_next</span>
                 </button>
             </div>

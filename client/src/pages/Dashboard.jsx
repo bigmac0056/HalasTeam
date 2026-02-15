@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import API from '../api/api';
@@ -40,6 +40,13 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
+  const [musicPlayback, setMusicPlayback] = useState({
+    isPlaying: false,
+    currentTrack: null,
+    currentTrackId: null,
+    playlistId: null
+  });
+  const [isMusicPlaybackUpdating, setIsMusicPlaybackUpdating] = useState(false);
 
   // Add device form state
   const [name, setName] = useState('');
@@ -50,6 +57,7 @@ export default function Dashboard() {
 
   const navigate = useNavigate();
   const brightnessTimerRef = useRef({});
+  const dashboardAudioRef = useRef(null);
 
   const fetchDevices = async () => {
     try {
@@ -98,6 +106,21 @@ export default function Dashboard() {
     }
   };
 
+  const fetchMusicPlayback = useCallback(async () => {
+    try {
+      const res = await API.get('/music/playback/state');
+      const data = res.data || {};
+      setMusicPlayback({
+        isPlaying: Boolean(data.isPlaying),
+        currentTrack: data.currentTrack || null,
+        currentTrackId: data.currentTrackId || data.currentTrack?.id || null,
+        playlistId: data.playlistId || null
+      });
+    } catch (error) {
+      console.error('Error fetching music playback state:', error);
+    }
+  }, []);
+
   const toggleDevice = async (id) => {
     try {
       await API.post('/devices/toggle', { deviceId: id });
@@ -122,7 +145,6 @@ export default function Dashboard() {
       setDeviceToDelete(null);
     } catch (error) {
       console.error('Error deleting device:', error);
-      alert('Не удалось удалить устройство');
     }
   };
 
@@ -167,9 +189,42 @@ export default function Dashboard() {
       fetchDevices();
     } catch (error) {
       console.error('Error adding device:', error);
-      alert('Не удалось добавить устройство');
     }
   };
+
+  const runMusicPlaybackAction = useCallback(async (action) => {
+    setIsMusicPlaybackUpdating(true);
+    try {
+      const res = await action();
+      const data = res.data || {};
+      setMusicPlayback({
+        isPlaying: Boolean(data.isPlaying),
+        currentTrack: data.currentTrack || null,
+        currentTrackId: data.currentTrackId || data.currentTrack?.id || null,
+        playlistId: data.playlistId || null
+      });
+    } catch (error) {
+      console.error('Error updating music playback:', error);
+    } finally {
+      setIsMusicPlaybackUpdating(false);
+    }
+  }, []);
+
+  const handleMusicPlayPause = useCallback(async () => {
+    if (musicPlayback.isPlaying) {
+      await runMusicPlaybackAction(() => API.post('/music/playback/pause'));
+      return;
+    }
+    await runMusicPlaybackAction(() => API.post('/music/playback/play'));
+  }, [musicPlayback.isPlaying, runMusicPlaybackAction]);
+
+  const handleMusicNext = useCallback(async () => {
+    await runMusicPlaybackAction(() => API.post('/music/playback/next'));
+  }, [runMusicPlaybackAction]);
+
+  const handleMusicPrev = useCallback(async () => {
+    await runMusicPlaybackAction(() => API.post('/music/playback/prev'));
+  }, [runMusicPlaybackAction]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -183,7 +238,8 @@ export default function Dashboard() {
           fetchHomeMode(),
           fetchAutopilotState(),
           fetchAutomationLogs(),
-          fetchNotifications()
+          fetchNotifications(),
+          fetchMusicPlayback()
         ]);
       } catch (error) {
         console.error("Dashboard init error:", error);
@@ -197,9 +253,10 @@ export default function Dashboard() {
     const interval = setInterval(() => {
       fetchDevices();
       fetchNotifications();
+      fetchMusicPlayback();
     }, 10000);
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [fetchMusicPlayback, navigate]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -219,6 +276,31 @@ export default function Dashboard() {
     }
   }, []);
 
+  useEffect(() => {
+    const audio = dashboardAudioRef.current;
+    if (!audio) return;
+
+    const trackUrl = musicPlayback.currentTrack?.fileUrl;
+    if (!trackUrl) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      return;
+    }
+
+    if (audio.src !== trackUrl) {
+      audio.src = trackUrl;
+    }
+
+    if (musicPlayback.isPlaying) {
+      audio.play().catch((error) => {
+        console.error('Dashboard audio play error:', error);
+      });
+    } else {
+      audio.pause();
+    }
+  }, [musicPlayback.currentTrack?.id, musicPlayback.currentTrack?.fileUrl, musicPlayback.isPlaying]);
+
   const rooms = ['Все', ...new Set([...ROOM_OPTIONS, ...devices.map(d => d.room).filter(Boolean)])];
   const filteredDevices = selectedRoom === 'Все' ? devices : devices.filter(d => d.room === selectedRoom);
 
@@ -230,9 +312,14 @@ export default function Dashboard() {
           name={device.name}
           room={device.room}
           status={device.status}
-          currentTrackTitle={device.currentTrackTitle}
+          currentTrackTitle={musicPlayback.currentTrack?.title || ''}
+          isPlaying={musicPlayback.isPlaying}
           onToggle={() => toggleDevice(device.id)}
           onDelete={() => requestDeleteDevice(device.id, device.name)}
+          onPlayPause={handleMusicPlayPause}
+          onNext={handleMusicNext}
+          onPrev={handleMusicPrev}
+          controlsDisabled={isMusicPlaybackUpdating}
         />
       );
     }
@@ -504,6 +591,12 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <audio
+        ref={dashboardAudioRef}
+        preload="metadata"
+        onEnded={handleMusicNext}
+      />
     </div>
   );
 }

@@ -11,12 +11,22 @@ router.use(authMiddleware);
 // Получить аналитику
 router.get('/', async (req, res) => {
   try {
-    const devices = getAllDevices(req.user.id);
+    const periodDays = Number(req.query.periodDays || 30);
+    const devices = await getAllDevices(req.user.id);
     const activeDevices = devices.filter(device => device.status);
-    const energyRecords = getEnergyConsumptionByUserId(req.user.id);
+    const energyRecords = await getEnergyConsumptionByUserId(req.user.id);
+
+    const now = Date.now();
+    const periodMs = periodDays > 0 ? periodDays * 24 * 60 * 60 * 1000 : null;
+    const filteredEnergyRecords = periodMs
+      ? energyRecords.filter((record) => {
+          const ts = new Date(record.timestamp).getTime();
+          return now - ts <= periodMs;
+        })
+      : energyRecords;
 
     // Расчет общего энергопотребления
-    const totalEnergyConsumption = energyRecords.reduce(
+    const totalEnergyConsumption = filteredEnergyRecords.reduce(
       (sum, record) => sum + (record.energyConsumed || 0),
       0
     );
@@ -58,13 +68,13 @@ router.get('/', async (req, res) => {
     if (lat && lon) {
       try {
         const weatherData = await getWeather(parseFloat(lat), parseFloat(lon));
-        recommendations = getRecommendations(req.user.id, weatherData);
+        recommendations = await getRecommendations(req.user.id, weatherData);
       } catch (error) {
         // Если не удалось получить погоду, используем рекомендации без погоды
-        recommendations = getRecommendations(req.user.id);
+        recommendations = await getRecommendations(req.user.id);
       }
     } else {
-      recommendations = getRecommendations(req.user.id);
+      recommendations = await getRecommendations(req.user.id);
     }
 
     res.json({
@@ -75,7 +85,8 @@ router.get('/', async (req, res) => {
         totalEnergyConsumption,
         roomStats,
         typeStats,
-        recentActivity: energyRecords.slice(-10).reverse() // Последние 10 записей
+        periodDays,
+        recentActivity: filteredEnergyRecords.slice(0, 30).reverse()
       },
       recommendations
     });

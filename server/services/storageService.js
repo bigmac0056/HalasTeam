@@ -4,7 +4,7 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/cl
 
 const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'local';
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
-const PUBLIC_BASE_URL = process.env.STORAGE_PUBLIC_BASE_URL || 'http://localhost:3000/uploads';
+const PUBLIC_BASE_URL = process.env.STORAGE_PUBLIC_BASE_URL || '';
 
 // Ensure uploads dir exists for local storage
 if (STORAGE_PROVIDER === 'local' && !fs.existsSync(UPLOADS_DIR)) {
@@ -32,9 +32,13 @@ const uploadFile = async ({ buffer, mimeType, originalName, userId }) => {
     if (STORAGE_PROVIDER === 'local') {
         const filePath = path.join(UPLOADS_DIR, filename);
         await fs.promises.writeFile(filePath, buffer);
+        const trimmedBase = PUBLIC_BASE_URL.trim().replace(/\/$/, '');
+        const fileUrl = trimmedBase
+            ? `${trimmedBase}/${filename}`
+            : `/uploads/${filename}`;
 
         return {
-            fileUrl: `${PUBLIC_BASE_URL}/${filename}`,
+            fileUrl,
             storageKey: filename, // For local, key is filename
             sizeBytes: buffer.length,
             mimeType

@@ -1,10 +1,10 @@
 const { getAllDevices, getEnergyConsumptionByUserId } = require('../state');
 
-const getRecommendations = (userId, weatherData = null) => {
+const getRecommendations = async (userId, weatherData = null) => {
   const recommendations = [];
-  const devices = getAllDevices(userId);
+  const devices = await getAllDevices(userId);
   const activeDevices = devices.filter(device => device.status);
-  const energyRecords = getEnergyConsumptionByUserId(userId);
+  const energyRecords = await getEnergyConsumptionByUserId(userId);
 
   if (weatherData) {
     if (weatherData.temperature < 0) {

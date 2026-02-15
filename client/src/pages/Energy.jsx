@@ -16,11 +16,13 @@ export default function Energy() {
     const [analytics, setAnalytics] = useState(null);
     const [tariff, setTariff] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     // User inputs for tariff calculation
     const [consumptionOverride, setConsumptionOverride] = useState(null);
     const [occupants, setOccupants] = useState(1);
     const [stoveType, setStoveType] = useState('electric');
+    const [periodDays, setPeriodDays] = useState(30);
 
     // Location state
     const [coords, setCoords] = useState({ lat: 51.1694, lon: 71.4491 }); // Default: Astana
@@ -37,13 +39,21 @@ export default function Energy() {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
+        setError('');
         try {
             // 2. Fetch Analytics
-            const analyticsRes = await API.get('/analytics');
-            setAnalytics(analyticsRes.data.analytics);
+            const analyticsRes = await API.get('/analytics', {
+                params: {
+                    lat: coords.lat,
+                    lon: coords.lon,
+                    periodDays
+                }
+            });
+            const analyticsData = analyticsRes.data?.analytics || null;
+            setAnalytics(analyticsData);
 
             // Determine consumption to use for calculation (real or override)
-            const realConsumption = analyticsRes.data.analytics.totalEnergyConsumption || 0;
+            const realConsumption = Number(analyticsData?.totalEnergyConsumption || 0);
             const calcConsumption = consumptionOverride !== null ? consumptionOverride : realConsumption;
 
             // 3. Fetch Tariff
@@ -52,39 +62,50 @@ export default function Energy() {
                     params: {
                         lat: coords.lat,
                         lon: coords.lon,
-                        monthlyKwh: calcConsumption || 100, // min 100 to show valid calculation
+                        monthlyKwh: Math.max(calcConsumption, 1),
                         stoveType,
                         peopleCount: occupants
                     }
                 });
-                setTariff(tariffRes.data);
+                const tariffData = tariffRes.data || {};
+                setTariff({
+                    ...tariffData,
+                    totalCost: tariffData.totalCost ?? tariffData.totalKzt ?? 0,
+                    breakdown: tariffData.breakdown ?? tariffData.tariffBreakdown ?? []
+                });
             }
         } catch (error) {
             console.error("Failed to load energy data:", error);
+            setError(error.response?.data?.error || 'Не удалось загрузить данные по энергопотреблению');
         } finally {
             setLoading(false);
         }
-    }, [coords, stoveType, occupants, consumptionOverride]);
+    }, [coords, stoveType, occupants, consumptionOverride, periodDays]);
 
     useEffect(() => {
         fetchData();
-    }, [coords, stoveType, occupants, consumptionOverride, fetchData]); // Refetch when inputs change
+    }, [coords, stoveType, occupants, consumptionOverride, periodDays, fetchData]);
 
     // Format currency
     const formatKZT = (val) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT' }).format(val);
 
-    // Prepare Chart Data
-    /* const chartData = analytics?.recentActivity?.map(record => ({
-        name: new Date(record.timestamp).toLocaleDateString('ru-RU', { weekday: 'short' }),
-        value: record.energyConsumed
-    })) || []; */
-
-    // Fallback chart data if empty
-    // const displayChartData = chartData.length > 0 ? chartData : Array(7).fill({ name: '-', value: 0 });
+    const groupedByDay = (analytics?.recentActivity || []).reduce((acc, record) => {
+        const day = new Date(record.timestamp).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        acc[day] = (acc[day] || 0) + Number(record.energyConsumed || 0);
+        return acc;
+    }, {});
+    const chartData = Object.entries(groupedByDay).map(([name, value]) => ({
+        name,
+        value: Number(value.toFixed(2))
+    }));
+    const displayChartData = chartData.length > 0 ? chartData : [{ name: 'Нет данных', value: 0 }];
 
     const currentConsumption = consumptionOverride !== null
         ? consumptionOverride
         : (analytics?.totalEnergyConsumption || 0);
+    const periodLabel = periodDays === 0 ? 'за все время' : `за ${periodDays} дн.`;
+    const displayRegion = tariff?.city ? `${tariff.city}${tariff.region ? `, ${tariff.region}` : ''}` : (tariff?.region || 'Определение...');
+    const hasTariffCost = tariff && typeof tariff.totalCost === 'number';
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300 font-sans">
@@ -94,10 +115,31 @@ export default function Energy() {
                 <div className="mb-8 flex justify-between items-end">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Аналитика Энергии</h1>
-                        <p className="text-slate-500 dark:text-slate-400">Реальные данные с ваших устройств</p>
+                        <p className="text-slate-500 dark:text-slate-400">Реальные данные с ваших устройств {periodLabel}</p>
                     </div>
-                    {loading && <span className="text-primary font-medium animate-pulse">Обновление данных...</span>}
+                    <div className="flex items-center gap-3">
+                        <select
+                            value={periodDays}
+                            onChange={(e) => {
+                                setPeriodDays(Number(e.target.value));
+                                setConsumptionOverride(null);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none text-sm text-slate-700 dark:text-slate-200"
+                        >
+                            <option value={7}>Последние 7 дней</option>
+                            <option value={30}>Последние 30 дней</option>
+                            <option value={90}>Последние 90 дней</option>
+                            <option value={0}>Все время</option>
+                        </select>
+                        {loading && <span className="text-primary font-medium animate-pulse">Обновление данных...</span>}
+                    </div>
                 </div>
+
+                {error && (
+                    <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-300 text-sm">
+                        {error}
+                    </div>
+                )}
 
                 {/* KPI Cards Row */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -119,7 +161,7 @@ export default function Energy() {
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Потребление (Всего)</p>
                         <h3 className="text-3xl font-bold text-slate-900 dark:text-white">
-                            {analytics?.totalEnergyConsumption || 0} <span className="text-lg text-slate-400 font-normal">кВт·ч</span>
+                            {Number(analytics?.totalEnergyConsumption || 0).toFixed(1)} <span className="text-lg text-slate-400 font-normal">кВт·ч</span>
                         </h3>
                     </div>
 
@@ -130,7 +172,7 @@ export default function Energy() {
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Ваш регион</p>
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white truncate">
-                            {tariff?.region || 'Определение...'}
+                            {displayRegion}
                         </h3>
                     </div>
 
@@ -141,8 +183,31 @@ export default function Energy() {
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Стоимость (KPI)</p>
                         <h3 className="text-3xl font-bold text-slate-900 dark:text-white">
-                            {tariff?.totalCost ? formatKZT(tariff.totalCost) : '---'}
+                            {hasTariffCost ? formatKZT(tariff.totalCost) : '---'}
                         </h3>
+                    </div>
+                </div>
+
+                {/* Period Chart */}
+                <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Отчет за период</h2>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{periodLabel}</span>
+                    </div>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={displayChartData} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                                    {displayChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#3B82F6' : '#CBD5E1'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
@@ -161,7 +226,7 @@ export default function Energy() {
                             <div>
                                 <div className="flex justify-between mb-2">
                                     <label className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                        Месячное потребление: <span className="text-slate-900 dark:text-white font-bold">{currentConsumption} кВт·ч</span>
+                                        Потребление для расчета: <span className="text-slate-900 dark:text-white font-bold">{Number(currentConsumption || 0).toFixed(1)} кВт·ч</span>
                                     </label>
                                     <button
                                         onClick={() => setConsumptionOverride(null)}
@@ -203,7 +268,7 @@ export default function Energy() {
                                         type="number"
                                         min="1"
                                         value={occupants}
-                                        onChange={(e) => setOccupants(parseInt(e.target.value))}
+                                        onChange={(e) => setOccupants(Math.max(1, Number(e.target.value) || 1))}
                                         className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary/20"
                                     />
                                 </div>
@@ -216,30 +281,30 @@ export default function Energy() {
                                 <div>
                                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Регион</p>
                                     <div className="text-slate-900 dark:text-white font-bold text-lg">
-                                        {tariff?.region || '---'}
+                                        {displayRegion || '---'}
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Расчетная стоимость</p>
                                     <div className="text-3xl font-bold text-primary">
-                                        {tariff?.totalCost ? formatKZT(tariff.totalCost) : '---'}
+                                        {hasTariffCost ? formatKZT(tariff.totalCost) : '---'}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
                                 <p className="text-sm font-medium text-slate-900 dark:text-white">Детали тарифа:</p>
-                                {tariff?.breakdown?.map((item, idx) => (
+                                {tariff?.breakdown?.length > 0 ? tariff.breakdown.map((item, idx) => (
                                     <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
                                         <div className="flex items-center gap-3">
                                             <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">{idx + 1}</div>
                                             <span className="text-slate-600 dark:text-slate-300 text-sm">
-                                                {item.limit ? `до ${item.limit} кВт·ч` : 'Сверх лимита'} × {item.rate} ₸
+                                                Тариф {item.tier}: {item.kwh} кВт·ч × {item.price} ₸
                                             </span>
                                         </div>
                                         <span className="font-bold text-slate-900 dark:text-white">{formatKZT(item.cost)}</span>
                                     </div>
-                                )) || <p className="text-sm text-slate-400">Нет данных для отображения</p>}
+                                )) : <p className="text-sm text-slate-400">{tariff?.error || 'Нет данных для отображения'}</p>}
                             </div>
                         </div>
                     </div>
