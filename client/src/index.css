@@ -1,31 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Round');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .glass-panel {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 shadow-xl;
-  }
-}
-
-
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Brand Colors - Cyan/Blue Gradient Theme */
+  --color-primary: #3B9FE8;
+  --color-primary-dark: #2563EB;
+  --color-secondary: #06B6D4;
+  --color-accent: #8B5CF6;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Light Mode Backgrounds */
+  --bg-light: #F8FAFC;
+  --bg-card: #FFFFFF;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Dark Mode Backgrounds */
+  --bg-dark: #0F172A;
+  --bg-card-dark: #1E293B;
 }
 
 body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-light);
+  color: #1E293B;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ========== Dark Mode Background ========== */
+.dark body,
+.dark .min-h-screen {
+  background: linear-gradient(180deg, #0B1120 0%, #111B2E 50%, #0B1120 100%);
+}
+
+/* Dark mode cards: subtle border glow */
+.dark .bg-white {
+  background-color: #151E2F;
+}
+
+/* ========== Custom Scrollbar ========== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #2A3A52;
+}
+
+/* ========== Glassmorphism ========== */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-panel {
+  background: rgba(21, 30, 47, 0.7);
+  border: 1px solid rgba(59, 159, 232, 0.1);
+  border-bottom: 1px solid rgba(59, 159, 232, 0.1);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.dark .glass-card {
+  background: rgba(21, 30, 47, 0.6);
+  border: 1px solid rgba(59, 159, 232, 0.15);
+}
+
+/* ========== Animations ========== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.dark .smart-gradient {
+  background: linear-gradient(135deg, #0B1120 0%, #131B2E 33%, #141825 66%, #0D1422 100%);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ========== Toggle Switch ========== */
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: #3B9FE8;
+}
+
+.toggle-checkbox:checked+.toggle-label {
+  background-color: #3B9FE8;
+}
+
+/* ========== Material Icons ========== */
+.material-icons-round {
+  display: inline-flex;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* ========== Card Effects ========== */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(59, 159, 232, 0.08);
+}
+
+/* ========== Utility Classes ========== */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(90deg, #3B9FE8 0%, #8B5CF6 100%);
+}
+
+.dark .text-gradient {
+  background-image: linear-gradient(90deg, #60A5FA 0%, #A78BFA 100%);
+}
+
+.dark .card-shadow {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== Dark Mode Card Borders ========== */
+.dark .border-slate-100 {
+  border-color: #1E2D45;
+}
+
+.dark .border-slate-200 {
+  border-color: #1E2D45;
+}
+
+/* ========== Dark Mode Input Background ========== */
+.dark .bg-slate-50 {
+  background-color: #111B2E;
+}
+
+.dark .bg-slate-100 {
+  background-color: #151E2F;
+}
+
+/* ========== SmartSphere Premium Animations ========== */
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in-right {
+  animation: fadeInRight 0.6s ease-out forwards;
+}
+
+@keyframes pulseSlow {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 4s ease-in-out infinite;
 }

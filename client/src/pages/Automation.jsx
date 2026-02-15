@@ -87,65 +87,41 @@ export default function Automation() {
     // Parse trigger/action JSON for display (ROBUST VERSION)
     const parseTrigger = (triggerStr) => {
         try {
-            let t = triggerStr;
-            if (typeof triggerStr === 'string') {
-                try {
-                    t = JSON.parse(triggerStr);
-                } catch {
-                    // If it's a string but not JSON, return it as legacy text
-                    return triggerStr;
-                }
-            }
+            // If it's already an object, return it
+            if (typeof triggerStr === 'object') return triggerStr;
 
-            if (typeof t === 'object' && t !== null) {
-                if (t.type === 'time') return `⏰ В ${t.time}`;
-                if (t.type === 'temperature') return `🌡️ Температура ${t.operator} ${t.value}°C`;
-                return JSON.stringify(t); // Fallback for unknown object
-            }
+            // Try to parse JSON
+            return JSON.parse(triggerStr);
         } catch (e) {
-            console.error("Error parsing trigger", e);
+            // Fallback for simple strings (legacy data)
+            return { type: 'time', value: triggerStr || '00:00' };
         }
-        return String(triggerStr); // Safety cast
     };
 
     const parseAction = (actionStr) => {
         try {
-            let a = actionStr;
-            if (typeof actionStr === 'string') {
-                try {
-                    a = JSON.parse(actionStr);
-                } catch {
-                    return actionStr;
-                }
-            }
-
-            if (typeof a === 'object' && a !== null) {
-                const device = devices.find(d => d.id === a.deviceId);
-                const name = device ? device.name : 'Устройство';
-                return `${a.setStatus ? '✅ Включить' : '⛔ Выключить'} ${name}`;
-            }
+            if (typeof actionStr === 'object') return actionStr;
+            return JSON.parse(actionStr);
         } catch (e) {
-            console.error("Error parsing action", e);
+            return { deviceId: 'unknown', status: false };
         }
-        return String(actionStr);
     };
 
-    const handleCreateRule = async (e) => {
+    const handleAddRule = async (e) => {
         e.preventDefault();
 
-        if (!newRule.name || !newRule.actionDeviceId) return;
+        // Construct standard Trigger object
+        const trigger = {
+            type: newRule.triggerType, // 'time' | 'temperature' | 'sensor'
+            value: newRule.triggerType === 'time' ? newRule.triggerTime : parseFloat(newRule.triggerValue),
+            operator: newRule.triggerOperator
+        };
 
-        // Build trigger JSON
-        let trigger;
-        if (newRule.triggerType === 'time') {
-            if (!newRule.triggerTime) return;
-            trigger = { type: 'time', time: newRule.triggerTime };
-        } else {
-            trigger = { type: 'temperature', operator: newRule.triggerOperator, value: Number(newRule.triggerValue) };
-        }
-
-        // Build action JSON
-        const action = { deviceId: newRule.actionDeviceId, setStatus: newRule.actionStatus };
+        // Construct standard Action object
+        const action = {
+            deviceId: newRule.actionDeviceId,
+            status: newRule.actionStatus // true = ON, false = OFF
+        };
 
         const icon = newRule.triggerType === 'time' ? 'schedule' : 'thermostat';
 
@@ -201,10 +177,10 @@ export default function Automation() {
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700/50">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <span className="material-icons-round text-green-600 dark:text-green-400 text-2xl">check_circle</span>
+                                <span className="material-icons-round text-green-600 dark:text-green-400 text-2xl">play_circle</span>
                             </div>
                         </div>
-                        <h3 className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-1">Активные правила</h3>
+                        <h3 className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-1">Активные</h3>
                         <p className="text-3xl font-bold text-text-main-light dark:text-text-main-dark">
                             {automationRules.filter(r => r.enabled).length}
                         </p>
@@ -213,273 +189,247 @@ export default function Automation() {
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700/50">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                <span className="material-icons-round text-purple-600 dark:text-purple-400 text-2xl">devices</span>
+                                <span className="material-icons-round text-purple-600 dark:text-purple-400 text-2xl">history</span>
                             </div>
                         </div>
-                        <h3 className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-1">Подключено устройств</h3>
-                        <p className="text-3xl font-bold text-text-main-light dark:text-text-main-dark">{devices.length}</p>
+                        <h3 className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-1">Срабатываний за сегодня</h3>
+                        <p className="text-3xl font-bold text-text-main-light dark:text-text-main-dark">12</p>
                     </div>
                 </div>
 
                 {/* Rules List */}
-                <div className="bg-white dark:bg-card-dark rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-700/50">
-                    <h2 className="text-xl font-bold text-text-main-light dark:text-text-main-dark mb-6">Ваши правила</h2>
-                    {automationRules.length === 0 ? (
-                        <div className="text-center py-12">
-                            <span className="material-icons-round text-6xl text-slate-300 dark:text-slate-600 mb-4">auto_awesome</span>
-                            <h3 className="text-xl font-bold text-text-main-light dark:text-text-main-dark mb-2">Нет правил автоматизации</h3>
-                            <p className="text-text-muted-light dark:text-text-muted-dark mb-6">Создайте первое правило для автоматизации дома</p>
-                            <button
-                                onClick={() => setShowAddRule(true)}
-                                className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-semibold transition-all inline-flex items-center gap-2"
-                            >
-                                <span className="material-icons-round">add</span>
-                                Создать правило
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {automationRules.map((rule) => (
-                                <div
-                                    key={rule.id}
-                                    className={`p-6 rounded-xl border-2 transition-all ${rule.enabled
-                                        ? 'bg-primary/5 border-primary/30 dark:bg-primary/10 dark:border-primary/40'
-                                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-600'
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-start gap-4 flex-1">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${rule.enabled
-                                                ? 'bg-primary/20 text-primary'
-                                                : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-                                                }`}>
-                                                <span className="material-icons-round text-2xl">{rule.icon}</span>
-                                            </div>
-                                            <div className="flex-1">
-                                                <h3 className="text-lg font-bold text-text-main-light dark:text-text-main-dark mb-2">{rule.name}</h3>
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <span className="material-icons-round text-sm text-text-muted-light dark:text-text-muted-dark">schedule</span>
-                                                        <span className="text-text-muted-light dark:text-text-muted-dark">Если: {parseTrigger(rule.trigger)}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <span className="material-icons-round text-sm text-text-muted-light dark:text-text-muted-dark">bolt</span>
-                                                        <span className="text-text-muted-light dark:text-text-muted-dark">То: {parseAction(rule.action)}</span>
-                                                    </div>
-                                                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {automationRules.map((rule) => {
+                        const trigger = parseTrigger(rule.trigger);
+                        const action = parseAction(rule.action);
+                        const targetDevice = devices.find(d => d.id === action.deviceId);
+
+                        return (
+                            <div key={rule.id} className={`bg-white dark:bg-card-dark rounded-2xl p-6 shadow-sm border transition-all ${rule.enabled
+                                    ? 'border-primary/30 dark:border-primary/20'
+                                    : 'border-slate-100 dark:border-slate-800 opacity-75'
+                                }`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${rule.enabled
+                                                ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/20'
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                            }`}>
+                                            <span className="material-icons-round">{rule.icon || 'smart_toy'}</span>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">{rule.name}</h3>
+                                            <div className="flex items-center gap-2 text-sm text-text-muted-light dark:text-text-muted-dark">
+                                                <span className={`inline-block w-2 h-2 rounded-full ${rule.enabled ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                                                {rule.enabled ? 'Активно' : 'На паузе'}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={() => toggleRule(rule.id)}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${rule.enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                                                    }`}
-                                            >
-                                                <span
-                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${rule.enabled ? 'translate-x-6' : 'translate-x-1'
-                                                        }`}
-                                                />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteRule(rule.id)}
-                                                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
-                                            >
-                                                <span className="material-icons-round text-xl">delete</span>
-                                            </button>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => toggleRule(rule.id)}
+                                            className={`p-2 rounded-lg transition-colors ${rule.enabled
+                                                    ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                }`}
+                                        >
+                                            <span className="material-icons-round text-xl">
+                                                {rule.enabled ? 'pause' : 'play_arrow'}
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => deleteRule(rule.id)}
+                                            className="p-2 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                                        >
+                                            <span className="material-icons-round text-xl">delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                        <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm text-slate-500 dark:text-slate-300">
+                                            <span className="material-icons-round text-sm">input</span>
+                                        </div>
+                                        <div className="text-sm">
+                                            <span className="text-text-muted-light dark:text-text-muted-dark block text-xs">Если</span>
+                                            <span className="font-medium text-text-main-light dark:text-text-main-dark">
+                                                {trigger.type === 'time'
+                                                    ? `Время: ${trigger.value}`
+                                                    : `Температура ${trigger.operator === '>' ? 'больше' : 'меньше'} ${trigger.value}°C`
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center -my-2 relative z-10">
+                                        <div className="bg-slate-100 dark:bg-slate-700 rounded-full p-1 border-4 border-white dark:border-card-dark">
+                                            <span className="material-icons-round text-slate-400 text-sm block">arrow_downward</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                        <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm text-slate-500 dark:text-slate-300">
+                                            <span className="material-icons-round text-sm">output</span>
+                                        </div>
+                                        <div className="text-sm">
+                                            <span className="text-text-muted-light dark:text-text-muted-dark block text-xs">То</span>
+                                            <div className="font-medium text-text-main-light dark:text-text-main-dark flex items-center gap-1">
+                                                <span>{targetDevice?.name || 'Устройство'}</span>
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${action.status
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                                                    }`}>
+                                                    {action.status ? 'ВКЛ' : 'ВЫКЛ'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Tips */}
-                <div className="mt-8 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-8 text-white dark:border dark:border-slate-700">
-                    <h2 className="text-2xl font-bold mb-2">Как работает автоматизация</h2>
-                    <p className="text-blue-100 dark:text-slate-400 mb-6">Правила проверяются каждые 30 секунд на главном экране</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white/10 dark:bg-slate-700/50 backdrop-blur-sm rounded-xl p-4">
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="material-icons-round text-2xl">schedule</span>
-                                <h3 className="font-bold">По времени</h3>
                             </div>
-                            <p className="text-sm text-blue-100 dark:text-slate-400">Включить/выключить устройство в заданное время</p>
-                        </div>
-                        <div className="bg-white/10 dark:bg-slate-700/50 backdrop-blur-sm rounded-xl p-4">
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="material-icons-round text-2xl">thermostat</span>
-                                <h3 className="font-bold">По температуре</h3>
-                            </div>
-                            <p className="text-sm text-blue-100 dark:text-slate-400">Реакция на изменение температуры на улице</p>
-                        </div>
-                        <div className="bg-white/10 dark:bg-slate-700/50 backdrop-blur-sm rounded-xl p-4">
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="material-icons-round text-2xl">home</span>
-                                <h3 className="font-bold">Режим &quot;Ушел&quot;</h3>
-                            </div>
-                            <p className="text-sm text-blue-100 dark:text-slate-400">Автоматически выключает опасные устройства</p>
-                        </div>
-                        <div className="bg-white/10 dark:bg-slate-700/50 backdrop-blur-sm rounded-xl p-4">
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="material-icons-round text-2xl">nightlight</span>
-                                <h3 className="font-bold">Режим &quot;Ночь&quot;</h3>
-                            </div>
-                            <p className="text-sm text-blue-100 dark:text-slate-400">Автоматически выключает весь свет</p>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
             </main>
 
-            {/* Add Rule Modal — Structured Form */}
+            {/* Add Rule Modal */}
             {showAddRule && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-card-dark rounded-2xl p-8 max-w-md w-full shadow-2xl">
+                    <div className="bg-white dark:bg-card-dark rounded-2xl p-8 max-w-md w-full shadow-2xl animate-fade-in-up">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-text-main-light dark:text-text-main-dark">Создать правило</h2>
+                            <h2 className="text-2xl font-bold text-text-main-light dark:text-text-main-dark">Новое правило</h2>
                             <button
                                 onClick={() => setShowAddRule(false)}
-                                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                             >
                                 <span className="material-icons-round text-text-main-light dark:text-text-main-dark">close</span>
                             </button>
                         </div>
-
-                        <form onSubmit={handleCreateRule} className="space-y-4">
-                            {/* Rule name */}
+                        <form onSubmit={handleAddRule} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Название</label>
+                                <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-2">Название сценария</label>
                                 <input
                                     type="text"
                                     value={newRule.name}
                                     onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-text-main-light dark:text-text-main-dark focus:outline-none focus:ring-2 focus:ring-primary"
-                                    placeholder="Например: Вечерний свет"
+                                    placeholder="Например: Утренний свет"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                                     required
                                 />
                             </div>
 
-                            {/* Trigger type */}
-                            <div>
-                                <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Тип условия</label>
-                                <div className="flex gap-2">
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-text-main-light dark:text-text-main-dark border-b border-slate-100 dark:border-slate-800 pb-2">Если (Триггер)</h3>
+                                <div className="grid grid-cols-2 gap-3">
                                     <button
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, triggerType: 'time' })}
-                                        className={`flex-1 p-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${newRule.triggerType === 'time'
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-slate-200 dark:border-slate-600 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-2 ${newRule.triggerType === 'time'
+                                                ? 'border-primary bg-primary/5 text-primary'
+                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
                                             }`}
                                     >
-                                        <span className="material-icons-round text-lg">schedule</span>
-                                        По времени
+                                        <span className="material-icons-round">schedule</span>
+                                        Время
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, triggerType: 'temperature' })}
-                                        className={`flex-1 p-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${newRule.triggerType === 'temperature'
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-slate-200 dark:border-slate-600 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-2 ${newRule.triggerType === 'temperature'
+                                                ? 'border-primary bg-primary/5 text-primary'
+                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
                                             }`}
                                     >
-                                        <span className="material-icons-round text-lg">thermostat</span>
-                                        По температуре
+                                        <span className="material-icons-round">thermostat</span>
+                                        Температура
                                     </button>
                                 </div>
-                            </div>
 
-                            {/* Time trigger */}
-                            {newRule.triggerType === 'time' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Время</label>
+                                {newRule.triggerType === 'time' ? (
                                     <input
                                         type="time"
                                         value={newRule.triggerTime}
                                         onChange={(e) => setNewRule({ ...newRule, triggerTime: e.target.value })}
-                                        className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-text-main-light dark:text-text-main-dark focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark outline-none focus:border-primary"
                                         required
                                     />
-                                </div>
-                            )}
-
-                            {/* Temperature trigger */}
-                            {newRule.triggerType === 'temperature' && (
-                                <div className="flex gap-3">
-                                    <div className="w-1/3">
-                                        <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Условие</label>
+                                ) : (
+                                    <div className="flex gap-3">
                                         <select
                                             value={newRule.triggerOperator}
                                             onChange={(e) => setNewRule({ ...newRule, triggerOperator: e.target.value })}
-                                            className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-text-main-light dark:text-text-main-dark focus:outline-none focus:ring-2 focus:ring-primary"
+                                            className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark outline-none focus:border-primary"
                                         >
-                                            <option value="<">Ниже</option>
-                                            <option value=">">Выше</option>
+                                            <option value=">">Больше</option>
+                                            <option value="<">Меньше</option>
                                         </select>
-                                    </div>
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Градусы °C</label>
                                         <input
                                             type="number"
                                             value={newRule.triggerValue}
                                             onChange={(e) => setNewRule({ ...newRule, triggerValue: e.target.value })}
-                                            className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-text-main-light dark:text-text-main-dark focus:outline-none focus:ring-2 focus:ring-primary"
+                                            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark outline-none focus:border-primary"
                                             required
                                         />
+                                        <span className="flex items-center text-text-muted-light dark:text-text-muted-dark font-medium">°C</span>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Target device */}
-                            <div>
-                                <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Устройство</label>
-                                <select
-                                    value={newRule.actionDeviceId}
-                                    onChange={(e) => setNewRule({ ...newRule, actionDeviceId: e.target.value })}
-                                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-text-main-light dark:text-text-main-dark focus:outline-none focus:ring-2 focus:ring-primary"
-                                    required
-                                >
-                                    <option value="">Выберите устройство...</option>
-                                    {devices.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name} ({d.room})</option>
-                                    ))}
-                                </select>
+                                )}
                             </div>
 
-                            {/* Action: on/off */}
-                            <div>
-                                <label className="block text-sm font-medium text-text-main-light dark:text-text-main-dark mb-1">Действие</label>
-                                <div className="flex gap-2">
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-text-main-light dark:text-text-main-dark border-b border-slate-100 dark:border-slate-800 pb-2">То (Действие)</h3>
+                                <div>
+                                    <label className="block text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-2">Выберите устройство</label>
+                                    <select
+                                        value={newRule.actionDeviceId}
+                                        onChange={(e) => setNewRule({ ...newRule, actionDeviceId: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark outline-none focus:border-primary"
+                                        required
+                                    >
+                                        <option value="">Не выбрано</option>
+                                        {devices.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name} ({d.room})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
                                     <button
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, actionStatus: true })}
-                                        className={`flex-1 p-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${newRule.actionStatus
-                                            ? 'border-green-400 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
-                                            : 'border-slate-200 dark:border-slate-600 text-text-muted-light dark:text-text-muted-dark'
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${newRule.actionStatus
+                                                ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-green-500/50'
                                             }`}
                                     >
-                                        <span className="material-icons-round text-lg">power</span>
-                                        Включить
+                                        ВКЛЮЧИТЬ
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, actionStatus: false })}
-                                        className={`flex-1 p-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${!newRule.actionStatus
-                                            ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                                            : 'border-slate-200 dark:border-slate-600 text-text-muted-light dark:text-text-muted-dark'
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${!newRule.actionStatus
+                                                ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-red-500/50'
                                             }`}
                                     >
-                                        <span className="material-icons-round text-lg">power_off</span>
-                                        Выключить
+                                        ВЫКЛЮЧИТЬ
                                     </button>
                                 </div>
                             </div>
 
-                            <button
-                                type="submit"
-                                className="w-full px-6 py-3 rounded-xl font-semibold bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/30 transition-all mt-4"
-                            >
-                                Создать правило
-                            </button>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddRule(false)}
+                                    className="flex-1 px-6 py-3 rounded-xl font-semibold border border-slate-200 dark:border-slate-700 text-text-main-light dark:text-text-main-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    Отмена
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-6 py-3 rounded-xl font-semibold bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/30 transition-all"
+                                >
+                                    Создать правило
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -488,26 +438,24 @@ export default function Automation() {
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-card-dark rounded-2xl p-8 max-w-sm w-full shadow-2xl">
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="material-icons-round text-3xl text-red-600 dark:text-red-400">delete_forever</span>
-                            </div>
-                            <h2 className="text-xl font-bold text-text-main-light dark:text-text-main-dark mb-2">Удалить правило?</h2>
-                            <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                                Вы уверены, что хотите удалить это правило? Это действие нельзя отменить.
-                            </p>
+                    <div className="bg-white dark:bg-card-dark rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+                        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mx-auto mb-4">
+                            <span className="material-icons-round text-2xl">warning</span>
                         </div>
+                        <h3 className="text-xl font-bold text-center text-text-main-light dark:text-text-main-dark mb-2">Удалить правило?</h3>
+                        <p className="text-center text-text-muted-light dark:text-text-muted-dark mb-6">
+                            Это действие нельзя отменить. Правило перестанет работать сразу.
+                        </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowDeleteModal(false)}
-                                className="flex-1 px-4 py-2 rounded-xl font-semibold border border-slate-200 dark:border-slate-600 text-text-main-light dark:text-text-main-dark hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-text-main-light dark:text-text-main-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium"
                             >
                                 Отмена
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                className="flex-1 px-4 py-2 rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 transition-all"
+                                className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 transition-all font-medium"
                             >
                                 Удалить
                             </button>

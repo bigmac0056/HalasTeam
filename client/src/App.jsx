@@ -1,50 +1,44 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Automation from './pages/Automation';
-import Energy from './pages/Energy';
 import Profile from './pages/Profile';
+import Energy from './pages/Energy';
+import Automation from './pages/Automation';
+import Register from './pages/Register';
 import OAuthCallback from './pages/OAuthCallback';
 import InfoPage from './pages/InfoPage';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
-  const token = localStorage.getItem('token');
+  const isAuthenticated = !!localStorage.getItem('token');
 
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />
-
+        <Route path="/info/:slug" element={<InfoPage />} />
         <Route
           path="/dashboard"
-          element={token ? <Dashboard /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/automation"
-          element={token ? <Automation /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/energy"
-          element={token ? <Energy /> : <Navigate to="/login" />}
+          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
         />
         <Route
           path="/profile"
-          element={token ? <Profile /> : <Navigate to="/login" />}
+          element={isAuthenticated ? <Profile /> : <Navigate to="/login" />}
         />
         <Route
-          path="/info"
-          element={token ? <InfoPage /> : <Navigate to="/login" />}
+          path="/energy"
+          element={isAuthenticated ? <Energy /> : <Navigate to="/login" />}
         />
-
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route
+          path="/automation"
+          element={isAuthenticated ? <Automation /> : <Navigate to="/login" />}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

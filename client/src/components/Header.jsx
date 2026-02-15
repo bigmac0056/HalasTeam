@@ -76,9 +76,11 @@ const Header = () => {
         <header className="sticky top-0 z-50 glass-panel border-b border-slate-200 dark:border-slate-700 px-8 py-3">
             <div className="max-w-[1400px] mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-8">
-                    <Link to="/dashboard" className="flex items-center gap-3">
-                        <img src="/logo.png" alt="SmartSphere" className="w-8 h-8 rounded-lg" />
-                        <span className="text-xl font-bold bg-gradient-to-r from-primary-light to-primary bg-clip-text text-transparent tracking-tight">SmartSphere</span>
+                    <Link to="/dashboard" className="flex items-center gap-3 group">
+                        <div className="w-10 h-10 rounded-2xl bg-[#0f172a] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <img src="/logo.png" alt="SmartSphere" className="w-6 h-6" />
+                        </div>
+                        <span className="text-2xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400 bg-clip-text text-transparent tracking-tighter">SmartSphere</span>
                     </Link>
                     <nav className="hidden md:flex gap-6 text-sm font-medium">
                         <Link
