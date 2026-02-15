@@ -22,6 +22,8 @@ model User {
   playlists Playlist[]
   tracks    Track[]
   playbackState UserPlaybackState?
+  aiRecommendations AiRecommendation[]
+  aiActionLogs AiActionLog[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   settings  UserSettings?
@@ -148,4 +150,33 @@ model UserPlaybackState {
   positionSec   Int      @default(0)
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AiRecommendation {
+  id             String   @id @default(uuid())
+  userId         String
+  title          String
+  reason         String
+  actionType     String   // TOGGLE_DEVICE, SET_TEMP, SET_MODE, UPGRADE_FIRMWARE
+  targetDeviceId String?
+  estimatedKwhSaveMonth Float?
+  estimatedKztSaveMonth Float?
+  comfortRisk    String   @default("low") // low, medium, high
+  autoApplicable Boolean  @default(false)
+  priority       Int      @default(1) // 1-5
+  isDismissed    Boolean  @default(false)
+  isApplied      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AiActionLog {
+  id             String   @id @default(uuid())
+  userId         String
+  actionType     String
+  targetDeviceId String?
+  details        String?
+  status         String   // SUCCESS, FAILED
+  timestamp      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

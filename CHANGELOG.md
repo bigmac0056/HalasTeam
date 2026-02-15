@@ -12,11 +12,13 @@
 
 ## [1.5.0] - 2026-02-15
 ### Added
+- **AI**: SmartSphere AI Advisor with energy saving recommendations.
+- **Reports**: Energy consumption reports with PDF download and Email support.
 - **Music**: Full music module with library, playlists, and playback.
 - **Music**: Drag & Drop upload + "Add to Playlist" feature.
 - **Music**: Real playback controls in Dashboard MusicCard.
 - **Storage**: Hybrid storage service (Local/S3).
-- **Database**: New Prisma models for Tracks, Playlists, and PlaybackState.
+- **Database**: New Prisma models for Tracks, Playlists, PlaybackState, AiRecommendation, AiActionLog.
 - **UI**: New Music page and updated Dashboard MusicCard.
 
 

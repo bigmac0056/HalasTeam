@@ -73,6 +73,8 @@ app.use('/notifications', notificationsRoutes);
 app.use('/automation', automationRoutes);
 app.use('/settings', require('./routes/settings'));
 app.use('/music', require('./routes/music')); // New music routes
+app.use('/ai', require('./routes/ai'));
+app.use('/reports', require('./routes/reports'));
 
 // Serve uploads for local storage
 const path = require('path');

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
+import ReportModal from '../components/ReportModal';
 import {
     BarChart,
     Bar,
@@ -72,6 +73,7 @@ export default function Energy() {
     const [resolvedCity, setResolvedCity] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // User inputs for tariff calculation
     const [consumptionOverride, setConsumptionOverride] = useState(null);
@@ -230,6 +232,13 @@ export default function Energy() {
                         <p className="text-slate-500 dark:text-slate-400">Данные по электричеству с ваших устройств {periodLabel}</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsReportModalOpen(true)}
+                            className="mr-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                        >
+                            <span className="material-icons-round text-sm">assessment</span>
+                            Отчет
+                        </button>
                         <select
                             value={periodDays}
                             onChange={(e) => {
@@ -436,6 +445,12 @@ export default function Energy() {
                         </div>
                     </div>
                 </div>
+                <ReportModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
+                    periodDays={periodDays}
+                    totalCost={tariff?.totalCost || 0}
+                />
             </main>
         </div>
     );
