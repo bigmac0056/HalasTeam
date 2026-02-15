@@ -72,6 +72,11 @@ app.use('/oauth', oauthRoutes);
 app.use('/notifications', notificationsRoutes);
 app.use('/automation', automationRoutes);
 app.use('/settings', require('./routes/settings'));
+app.use('/music', require('./routes/music')); // New music routes
+
+// Serve uploads for local storage
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/tariffs', require('./routes/tariffs'));
 
 

@@ -143,6 +143,14 @@ const Header = () => {
                         >
                             Автоматизация
                         </Link>
+                        <Link
+                            to="/music"
+                            className={`transition-colors ${isActive('/music')
+                                ? 'text-primary font-semibold'
+                                : 'text-text-muted-light dark:text-text-muted-dark hover:text-primary'}`}
+                        >
+                            Музыка
+                        </Link>
                     </nav>
                 </div>
                 <div className="flex items-center gap-4">

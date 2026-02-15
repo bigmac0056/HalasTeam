@@ -10,6 +10,14 @@
 - **Legal**: Refactored Landing page footer to remove large legal blocks.
 - **Legal**: Added "Terms & Privacy" disclaimer links to Login and Register pages.
 
+## [1.5.0] - 2026-02-15
+### Added
+- **Music**: Full music module with library, playlists, and playback.
+- **Storage**: Hybrid storage service (Local/S3).
+- **Database**: New Prisma models for Tracks, Playlists, and PlaybackState.
+- **UI**: New Music page and updated Dashboard MusicCard.
+
+
 ### Fixed
 - **Tests**: Fixed and updated client-side tests for Dashboard and Login pages.
 

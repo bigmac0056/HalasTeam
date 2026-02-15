@@ -7,6 +7,7 @@ import Automation from './pages/Automation';
 import Register from './pages/Register';
 import OAuthCallback from './pages/OAuthCallback';
 import InfoPage from './pages/InfoPage';
+import Music from './pages/Music';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
@@ -35,6 +36,10 @@ function App() {
         <Route
           path="/automation"
           element={isAuthenticated ? <Automation /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/music"
+          element={isAuthenticated ? <Music /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

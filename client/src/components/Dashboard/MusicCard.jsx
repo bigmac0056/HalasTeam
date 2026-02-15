@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
-const MusicCard = ({ name, room, status, onToggle, onDelete }) => {
+const MusicCard = ({ name, room, status, currentTrackTitle, onToggle, onDelete }) => {
     const [isPlaying, setIsPlaying] = useState(false);
+    const trackLabel = currentTrackTitle || 'Нет активного трека';
 
     return (
         <div className={`relative group bg-white dark:bg-card-dark rounded-3xl p-6 border transition-all hover:shadow-xl ${status ? 'border-primary/20 shadow-primary/5' : 'border-slate-100 dark:border-slate-800 shadow-sm'}`}>
@@ -13,7 +14,9 @@ const MusicCard = ({ name, room, status, onToggle, onDelete }) => {
                     <div>
                         <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{name}</h4>
                         <p className="text-xs text-slate-400 mt-1">{room}</p>
-                        <p className="text-xs text-primary font-medium mt-1">Играет: Morning Jazz Mix</p>
+                        <p className={`text-xs font-medium mt-1 ${currentTrackTitle ? 'text-primary' : 'text-slate-400'}`}>
+                            {currentTrackTitle ? `Играет: ${trackLabel}` : trackLabel}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

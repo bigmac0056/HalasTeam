@@ -1,78 +1,68 @@
 # Deployment Guide
 
-This project is ready for deployment on Vercel (Frontend) and Render/Railway (Backend).
+## Prerequisites
+- Node.js 18+
+- PostgreSQL 15+
+- (Optional) S3-compatible storage bucket
 
-## 1. Backend Deployment (Render/Railway)
+## Environment Variables
 
-### Prerequisites
-- GitHub Repository connected.
-- **PostgreSQL Database** (Neon.tech, Supabase, or Render PostgreSQL).
-- Environment Variables ready.
-
-### Environment Variables
-Set these in your hosting dashboard:
+### Server (.env)
 ```env
-PORT=3000
-NODE_ENV=production
-DATABASE_URL=postgres://user:password@host:port/dbname?sslmode=require
-JWT_SECRET=your-production-secret-key-min-32-chars
-ALLOWED_ORIGINS=https://your-frontend-domain.com
-# Google OAuth
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://your-backend-domain.com/oauth/google/callback
-FRONTEND_URL=https://your-frontend-domain.com
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/smartsphere"
+
+# Auth
+JWT_SECRET="your-secret-key"
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+GOOGLE_CALLBACK_URL="http://localhost:3000/oauth/google/callback"
+FRONTEND_URL="http://localhost:5173"
+ALLOWED_ORIGINS="http://localhost:5173,https://your-vercel-domain.vercel.app"
+
+# Storage
+STORAGE_PROVIDER="local" # or "s3"
+STORAGE_PUBLIC_BASE_URL="http://localhost:3000/uploads"
+
+# Music Limits
+MUSIC_MAX_TRACKS_PER_USER=500
+MUSIC_MAX_STORAGE_BYTES=2147483648 # 2GB
+
+# S3 Configuration (Required if STORAGE_PROVIDER="s3")
+S3_ENDPOINT="https://s3.region.amazonaws.com"
+S3_REGION="us-east-1"
+S3_BUCKET="your-bucket-name"
+S3_ACCESS_KEY_ID="..."
+S3_SECRET_ACCESS_KEY="..."
+S3_FORCE_PATH_STYLE="false"
 ```
 
-### Build Command
-```bash
-npm install
-npx prisma generate
-```
+## Build & Run
 
-### Start Command
-```bash
-# This will push the schema to the DB on start (good for MVP/Indie hackers)
-npx prisma db push && node index.js
-```
-*Note: For larger teams, use `npx prisma migrate deploy` instead of `db push`.*
+1. **Server**
+   ```bash
+   cd server
+   npm install
+   npx prisma db push
+   npm start
+   ```
 
-### Health Check
-Configure health check path to: `/health`
+2. **Client**
+   ```bash
+   cd client
+   npm install
+   npm run build
+   # Serve dist/ folder via Nginx or static server
+   ```
 
----
-
-## 2. Frontend Deployment (Vercel)
-
-### Environment Variables
-Set these in Vercel Project Settings:
-```env
-VITE_API_BASE_URL=https://your-backend-domain.com
-```
-
-### Build Command
-```bash
-npm run build
-```
-
-### Output Directory
-`dist`
-
----
-
-## 3. Google OAuth Configuration
-1. Go to [Google Cloud Console](https://console.cloud.google.com/).
-2. Select your project -> **APIs & Services** -> **Credentials**.
-3. Edit your OAuth 2.0 Client ID.
-4. **Authorized JavaScript origins**:
-   - `https://your-frontend-domain.com`
-   - `http://localhost:5173` (for local dev)
-5. **Authorized redirect URIs**:
-   - `https://your-backend-domain.com/oauth/google/callback`
-   - `http://localhost:3000/oauth/google/callback` (for local dev)
-
-## 4. Post-Deployment Verification
-1. Open Frontend URL.
-2. Check Console for any CORS errors.
-3. Try **Login with Google**.
-4. Check **Automation Logs** (should be empty initially).
+## Production Notes (Render + Vercel)
+- Backend URL example: `https://your-backend.onrender.com`
+- Frontend URL example: `https://your-frontend.vercel.app`
+- Set on Render (backend):
+  - `FRONTEND_URL=https://your-frontend.vercel.app`
+  - `GOOGLE_CALLBACK_URL=https://your-backend.onrender.com/oauth/google/callback`
+  - `ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:5173`
+  - `DATABASE_URL=postgres://...`
+  - `JWT_SECRET=...`
+- Set on Vercel (frontend):
+  - `VITE_API_BASE_URL=https://your-backend.onrender.com`

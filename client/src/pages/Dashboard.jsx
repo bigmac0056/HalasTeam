@@ -38,6 +38,8 @@ export default function Dashboard() {
   const [isAutoPilotUpdating, setIsAutoPilotUpdating] = useState(false);
   const [automationLog, setAutomationLog] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState(null);
 
   // Add device form state
   const [name, setName] = useState('');
@@ -105,14 +107,19 @@ export default function Dashboard() {
     }
   };
 
-  const deleteDeviceById = async (id, deviceName) => {
-    const confirmed = window.confirm(`Удалить устройство "${deviceName}"?`);
-    if (!confirmed) return;
+  const requestDeleteDevice = (id, deviceName) => {
+    setDeviceToDelete({ id, name: deviceName });
+    setShowDeleteModal(true);
+  };
 
+  const confirmDeleteDevice = async () => {
+    if (!deviceToDelete?.id) return;
     try {
-      await API.delete(`/devices/${id}`);
+      await API.delete(`/devices/${deviceToDelete.id}`);
       fetchDevices();
       fetchNotifications();
+      setShowDeleteModal(false);
+      setDeviceToDelete(null);
     } catch (error) {
       console.error('Error deleting device:', error);
       alert('Не удалось удалить устройство');
@@ -223,8 +230,9 @@ export default function Dashboard() {
           name={device.name}
           room={device.room}
           status={device.status}
+          currentTrackTitle={device.currentTrackTitle}
           onToggle={() => toggleDevice(device.id)}
-          onDelete={() => deleteDeviceById(device.id, device.name)}
+          onDelete={() => requestDeleteDevice(device.id, device.name)}
         />
       );
     }
@@ -236,7 +244,7 @@ export default function Dashboard() {
           room={device.room}
           status={device.status}
           onToggle={() => toggleDevice(device.id)}
-          onDelete={() => deleteDeviceById(device.id, device.name)}
+          onDelete={() => requestDeleteDevice(device.id, device.name)}
         />
       );
     }
@@ -248,7 +256,7 @@ export default function Dashboard() {
           room={device.room}
           status={device.status}
           onToggle={() => toggleDevice(device.id)}
-          onDelete={() => deleteDeviceById(device.id, device.name)}
+          onDelete={() => requestDeleteDevice(device.id, device.name)}
         />
       );
     }
@@ -258,7 +266,7 @@ export default function Dashboard() {
           key={device.id}
           device={device}
           onUpdate={fetchDevices}
-          onDelete={() => deleteDeviceById(device.id, device.name)}
+          onDelete={() => requestDeleteDevice(device.id, device.name)}
         />
       );
     }
@@ -276,9 +284,9 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+              <button
               type="button"
-              onClick={() => deleteDeviceById(device.id, device.name)}
+              onClick={() => requestDeleteDevice(device.id, device.name)}
               className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
               title="Удалить устройство"
             >
@@ -462,6 +470,37 @@ export default function Dashboard() {
                 <button type="submit" className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20">Добавить</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-card-dark rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mx-auto mb-4">
+              <span className="material-icons-round text-2xl">warning</span>
+            </div>
+            <h3 className="text-xl font-bold text-center text-text-main-light dark:text-text-main-dark mb-2">Удалить устройство?</h3>
+            <p className="text-center text-text-muted-light dark:text-text-muted-dark mb-6">
+              Устройство <span className="font-semibold">"{deviceToDelete?.name || ''}"</span> будет удалено без возможности восстановления.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeviceToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-text-main-light dark:text-text-main-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={confirmDeleteDevice}
+                className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 transition-all font-medium"
+              >
+                Удалить
+              </button>
+            </div>
           </div>
         </div>
       )}
