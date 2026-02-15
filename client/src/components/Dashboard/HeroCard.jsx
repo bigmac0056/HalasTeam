@@ -13,24 +13,33 @@ const weatherCodeToUi = (code) => {
     return { label: 'Переменно', icon: '🌤️' };
 };
 
-const HeroCard = ({ weather }) => {
+const HeroCard = ({ weather, devices = [] }) => {
     const rawTemp = weather?.temperature ?? weather?.temp;
     const tempNum = Number(rawTemp);
-    const safeTemp = Number.isFinite(tempNum) ? Math.round(tempNum) : 18;
+    const safeTemp = Number.isFinite(tempNum) ? Math.round(tempNum) : '--';
 
     const weatherUi = weatherCodeToUi(weather?.weathercode);
     const city = weather?.city || 'Ваш регион';
     const condition = weather?.condition || weatherUi.label;
 
+    // Calculate real stats
+    const tempSensors = devices.filter(d => (d.type === 'Sensor' && d.sensorType === 'temperature') || d.type === 'AC' || d.type === 'Heater');
+    const avgTemp = tempSensors.length
+        ? Math.round(tempSensors.reduce((acc, d) => acc + (d.value || 21), 0) / tempSensors.length)
+        : 22;
+
+    const activeAlerts = devices.filter(d => d.type === 'Sensor' && (d.value === 1 || d.isAlert));
+    const statusText = activeAlerts.length > 0 ? 'Требует внимания' : 'Оптимальный';
+    const statusColor = activeAlerts.length > 0 ? 'text-orange-400' : 'text-blue-400';
+
     return (
         <div className="bg-[#0f172a] dark:bg-[#020617] rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-blue-500/10 animate-fade-in-up">
             {/* Abstract Background Decor */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none"></div>
+            <div className={`absolute top-0 right-0 w-64 h-64 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none ${activeAlerts.length > 0 ? 'bg-orange-500/20' : 'bg-blue-500/10'}`}></div>
 
             <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
-                    <p className="text-blue-200/60 text-sm font-medium mb-1">С возвращением, Алекс</p>
-                    <h2 className="text-5xl font-bold tracking-tight mb-8">Статус: <span className="text-blue-400">Оптимальный</span></h2>
+                    <h2 className="text-5xl font-bold tracking-tight mb-8">Статус: <span className={statusColor}>{statusText}</span></h2>
                 </div>
 
                 <div className="flex flex-wrap items-end justify-between gap-8">
@@ -42,27 +51,27 @@ const HeroCard = ({ weather }) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-wider text-blue-200/40 font-bold">Темп. Дома</p>
-                                <p className="text-lg font-bold">22.5°C</p>
+                                <p className="text-lg font-bold">{avgTemp}°C</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                <span className="material-icons-round text-blue-300 text-xl">water_drop</span>
+                                <span className="material-icons-round text-blue-300 text-xl">notifications_active</span>
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-wider text-blue-200/40 font-bold">Влажность</p>
-                                <p className="text-lg font-bold">48%</p>
+                                <p className="text-[10px] uppercase tracking-wider text-blue-200/40 font-bold">Активные уведомления</p>
+                                <p className="text-lg font-bold">{activeAlerts.length}</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                <span className="material-icons-round text-blue-300 text-xl">air</span>
+                                <span className="material-icons-round text-blue-300 text-xl">devices</span>
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-wider text-blue-200/40 font-bold">Воздух</p>
-                                <p className="text-lg font-bold text-green-400">Отличный</p>
+                                <p className="text-[10px] uppercase tracking-wider text-blue-200/40 font-bold">Устройств</p>
+                                <p className="text-lg font-bold text-green-400">{devices.length}</p>
                             </div>
                         </div>
                     </div>

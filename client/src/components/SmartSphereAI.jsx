@@ -19,8 +19,7 @@ const SmartSphereAI = ({ autoPilot = false, onToggleAutoPilot, isAutoPilotUpdati
       </div>
 
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-        ИИ управляет вашим энергопотреблением. Прогнозируемая экономия 12% в
-        этом месяце.
+        ИИ анализирует ваши привычки для оптимизации комфорта и энергосбережения в реальном времени.
       </p>
 
       <div className="space-y-4">

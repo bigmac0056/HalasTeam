@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const MusicCard = ({ name, room, status, onToggle }) => {
+const MusicCard = ({ name, status, onToggle }) => {
     const [isPlaying, setIsPlaying] = useState(false);
 
     return (
@@ -12,7 +12,7 @@ const MusicCard = ({ name, room, status, onToggle }) => {
                     </div>
                     <div>
                         <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{name}</h4>
-                        <p className="text-xs text-primary font-medium mt-1">Playing: Morning Jazz Mix</p>
+                        <p className="text-xs text-primary font-medium mt-1">Играет: Morning Jazz Mix</p>
                     </div>
                 </div>
                 <button

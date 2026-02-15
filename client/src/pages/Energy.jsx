@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import {
     BarChart,
@@ -13,92 +13,136 @@ import {
 import API from '../api/api';
 
 export default function Energy() {
-    const [consumption, setConsumption] = useState(250);
+    const [analytics, setAnalytics] = useState(null);
+    const [tariff, setTariff] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // User inputs for tariff calculation
+    const [consumptionOverride, setConsumptionOverride] = useState(null);
     const [occupants, setOccupants] = useState(1);
     const [stoveType, setStoveType] = useState('electric');
-    const [region, setRegion] = useState('Astana');
-    const [provider, setProvider] = useState('Астанаэнергосбыт');
 
-    // Mock data to match screenshot
-    const usageData = [
-        { name: 'Пн', value: 4000 },
-        { name: 'Вт', value: 3000 },
-        { name: 'Ср', value: 2000 },
-        { name: 'Чт', value: 2780 },
-        { name: 'Пт', value: 1890 },
-        { name: 'Сб', value: 2390 },
-        { name: 'Вс', value: 3490 },
-    ];
+    // Location state
+    const [coords, setCoords] = useState({ lat: 51.1694, lon: 71.4491 }); // Default: Astana
 
-    // Tariff calculation logic (Simplified for demo)
-    const calculateCost = () => {
-        // 3-level tariff simulation
-        const level1Limit = 100;
-        const level2Limit = 150; // up to 250 total
-        const rate1 = 18;
-        const rate2 = 28;
-
-        let totalCost = 0;
-
-        if (consumption <= level1Limit) {
-            totalCost = consumption * rate1;
-        } else {
-            totalCost = level1Limit * rate1;
-            const remainder = consumption - level1Limit;
-            totalCost += remainder * rate2;
+    useEffect(() => {
+        // 1. Get Location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                (err) => console.warn("Location access denied, utilizing default (Astana)", err)
+            );
         }
+    }, []);
 
-        return totalCost.toFixed(2);
-    };
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            // 2. Fetch Analytics
+            const analyticsRes = await API.get('/analytics');
+            setAnalytics(analyticsRes.data.analytics);
 
-    const totalCost = calculateCost();
+            // Determine consumption to use for calculation (real or override)
+            const realConsumption = analyticsRes.data.analytics.totalEnergyConsumption || 0;
+            const calcConsumption = consumptionOverride !== null ? consumptionOverride : realConsumption;
+
+            // 3. Fetch Tariff
+            if (coords.lat && coords.lon) {
+                const tariffRes = await API.get('/tariffs/resolve', {
+                    params: {
+                        lat: coords.lat,
+                        lon: coords.lon,
+                        monthlyKwh: calcConsumption || 100, // min 100 to show valid calculation
+                        stoveType,
+                        peopleCount: occupants
+                    }
+                });
+                setTariff(tariffRes.data);
+            }
+        } catch (error) {
+            console.error("Failed to load energy data:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [coords, stoveType, occupants, consumptionOverride]);
+
+    useEffect(() => {
+        fetchData();
+    }, [coords, stoveType, occupants, consumptionOverride, fetchData]); // Refetch when inputs change
+
+    // Format currency
+    const formatKZT = (val) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT' }).format(val);
+
+    // Prepare Chart Data
+    /* const chartData = analytics?.recentActivity?.map(record => ({
+        name: new Date(record.timestamp).toLocaleDateString('ru-RU', { weekday: 'short' }),
+        value: record.energyConsumed
+    })) || []; */
+
+    // Fallback chart data if empty
+    // const displayChartData = chartData.length > 0 ? chartData : Array(7).fill({ name: '-', value: 0 });
+
+    const currentConsumption = consumptionOverride !== null
+        ? consumptionOverride
+        : (analytics?.totalEnergyConsumption || 0);
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300 font-sans">
             <Header />
 
             <main className="max-w-[1600px] mx-auto px-6 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Аналитика Энергии</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Следите за потреблением энергии и оптимизируйте его</p>
+                <div className="mb-8 flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Аналитика Энергии</h1>
+                        <p className="text-slate-500 dark:text-slate-400">Реальные данные с ваших устройств</p>
+                    </div>
+                    {loading && <span className="text-primary font-medium animate-pulse">Обновление данных...</span>}
                 </div>
 
                 {/* KPI Cards Row */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    {/* Today */}
+                    {/* Active Devices */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                            <span className="material-icons-round text-xl">flash_on</span>
+                            <span className="material-icons-round text-xl">devices</span>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Сегодня</p>
-                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">0.0 <span className="text-lg text-slate-400 font-normal">кВт·ч</span></h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Активные устройства</p>
+                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">
+                            {analytics?.activeDevices || 0} <span className="text-lg text-slate-400 font-normal">/ {analytics?.totalDevices || 0}</span>
+                        </h3>
                     </div>
 
-                    {/* This Week */}
+                    {/* Total Consumption */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
-                            <span className="material-icons-round text-xl">calendar_today</span>
+                            <span className="material-icons-round text-xl">flash_on</span>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Эта неделя</p>
-                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">0.0 <span className="text-lg text-slate-400 font-normal">кВт·ч</span></h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Потребление (Всего)</p>
+                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">
+                            {analytics?.totalEnergyConsumption || 0} <span className="text-lg text-slate-400 font-normal">кВт·ч</span>
+                        </h3>
                     </div>
 
-                    {/* This Month */}
+                    {/* Region */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4">
-                            <span className="material-icons-round text-xl">date_range</span>
+                            <span className="material-icons-round text-xl">location_on</span>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Этот месяц</p>
-                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">0.0 <span className="text-lg text-slate-400 font-normal">кВт·ч</span></h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Ваш регион</p>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white truncate">
+                            {tariff?.region || 'Определение...'}
+                        </h3>
                     </div>
 
                     {/* Estimated Cost */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 mb-4">
-                            <span className="material-icons-round text-xl">attach_money</span>
+                            <span className="material-icons-round text-xl">payments</span>
                         </div>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Примерная стоимость</p>
-                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">$0.00</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Стоимость (KPI)</p>
+                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">
+                            {tariff?.totalCost ? formatKZT(tariff.totalCost) : '---'}
+                        </h3>
                     </div>
                 </div>
 
@@ -107,7 +151,7 @@ export default function Energy() {
                     <div className="flex justify-between items-start mb-6">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Калькулятор тарифов (KZ)</h2>
                         <div className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded-full">
-                            Локация определена
+                            {tariff?.provider || 'Загрузка...'}
                         </div>
                     </div>
 
@@ -116,15 +160,23 @@ export default function Energy() {
                         <div className="space-y-8">
                             <div>
                                 <div className="flex justify-between mb-2">
-                                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Месячное потребление: <span className="text-slate-900 dark:text-white font-bold">{consumption} кВт·ч</span></label>
+                                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                        Месячное потребление: <span className="text-slate-900 dark:text-white font-bold">{currentConsumption} кВт·ч</span>
+                                    </label>
+                                    <button
+                                        onClick={() => setConsumptionOverride(null)}
+                                        className="text-xs text-primary hover:underline"
+                                    >
+                                        Сбросить к реальному
+                                    </button>
                                 </div>
                                 <input
                                     type="range"
                                     min="0"
                                     max="1000"
                                     step="10"
-                                    value={consumption}
-                                    onChange={(e) => setConsumption(parseInt(e.target.value))}
+                                    value={currentConsumption}
+                                    onChange={(e) => setConsumptionOverride(parseInt(e.target.value))}
                                     className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                                 />
                             </div>
@@ -142,7 +194,6 @@ export default function Energy() {
                                             <option value="gas">Газ</option>
                                         </select>
                                         <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 text-sm">flash_on</span>
-                                        <span className="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">expand_more</span>
                                     </div>
                                 </div>
 
@@ -150,52 +201,45 @@ export default function Energy() {
                                     <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Проживающих</label>
                                     <input
                                         type="number"
+                                        min="1"
                                         value={occupants}
                                         onChange={(e) => setOccupants(parseInt(e.target.value))}
                                         className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary/20"
                                     />
                                 </div>
                             </div>
-
-                            <button className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transition-all">
-                                <span className="material-icons-round animate-spin-slow">sync</span>
-                                Обновить расчет
-                            </button>
                         </div>
 
                         {/* Right Column: Result */}
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6">
                             <div className="flex justify-between items-start mb-8">
                                 <div>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Ваш регион / Поставщик</p>
-                                    <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-lg">
-                                        {region} <span className="text-slate-300">•</span> {provider}
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Регион</p>
+                                    <div className="text-slate-900 dark:text-white font-bold text-lg">
+                                        {tariff?.region || '---'}
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Итоговая стоимость</p>
-                                    <div className="text-3xl font-bold text-primary">{Math.round(totalCost)} ₸</div>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Расчетная стоимость</p>
+                                    <div className="text-3xl font-bold text-primary">
+                                        {tariff?.totalCost ? formatKZT(tariff.totalCost) : '---'}
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <p className="text-sm font-medium text-slate-900 dark:text-white">Детализация расчета (3 уровня):</p>
-
-                                <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">1</div>
-                                        <span className="text-slate-600 dark:text-slate-300 text-sm">100 кВт·ч × 18 ₸</span>
+                                <p className="text-sm font-medium text-slate-900 dark:text-white">Детали тарифа:</p>
+                                {tariff?.breakdown?.map((item, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">{idx + 1}</div>
+                                            <span className="text-slate-600 dark:text-slate-300 text-sm">
+                                                {item.limit ? `до ${item.limit} кВт·ч` : 'Сверх лимита'} × {item.rate} ₸
+                                            </span>
+                                        </div>
+                                        <span className="font-bold text-slate-900 dark:text-white">{formatKZT(item.cost)}</span>
                                     </div>
-                                    <span className="font-bold text-slate-900 dark:text-white">1800.00 ₸</span>
-                                </div>
-
-                                <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-xs font-bold">2</div>
-                                        <span className="text-slate-600 dark:text-slate-300 text-sm">{Math.min(consumption - 100, 150)} кВт·ч × 28 ₸</span>
-                                    </div>
-                                    <span className="font-bold text-slate-900 dark:text-white">{(Math.max(0, Math.min(consumption, 250) - 100) * 28).toFixed(2)} ₸</span>
-                                </div>
+                                )) || <p className="text-sm text-slate-400">Нет данных для отображения</p>}
                             </div>
                         </div>
                     </div>

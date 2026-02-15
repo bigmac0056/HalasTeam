@@ -9,10 +9,12 @@ import SmartSphereAI from '../components/SmartSphereAI';
 import MusicCard from '../components/Dashboard/MusicCard';
 import HVACCard from '../components/Dashboard/HVACCard';
 import CameraCard from '../components/Dashboard/CameraCard';
+import SensorCard from '../components/Dashboard/SensorCard';
 
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   const [weather, setWeather] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState('Все');
   const [homeMode, setHomeMode] = useState('Home');
@@ -24,6 +26,7 @@ export default function Dashboard() {
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
   const [type, setType] = useState('');
+  const [sensorType, setSensorType] = useState(''); // New state for sensor subtype
   const [source, setSource] = useState('');
 
   const navigate = useNavigate();
@@ -111,8 +114,8 @@ export default function Dashboard() {
   const addDevice = async (e) => {
     e.preventDefault();
     try {
-      await API.post('/devices/add', { name, room, type, source });
-      setName(''); setRoom(''); setType(''); setSource('');
+      await API.post('/devices/add', { name, room, type, source, sensorType: type === 'Sensor' ? sensorType : undefined });
+      setName(''); setRoom(''); setType(''); setSource(''); setSensorType('');
       setShowAddDevice(false);
       fetchDevices();
     } catch (error) {
@@ -124,15 +127,27 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { navigate('/login'); return; }
-    // Use setTimeout to avoid synchronous state updates in effect
-    const timer = setTimeout(() => {
-      fetchDevices();
-      fetchHomeMode();
-      fetchAutopilotState();
-      fetchAutomationLogs();
-    }, 0);
 
-    return () => clearTimeout(timer);
+    const initDashboard = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchDevices(),
+          fetchHomeMode(),
+          fetchAutopilotState(),
+          fetchAutomationLogs()
+        ]);
+      } catch (error) {
+        console.error("Dashboard init error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initDashboard();
+
+    const interval = setInterval(fetchDevices, 10000);
+    return () => clearInterval(interval);
   }, [navigate]);
 
   useEffect(() => {
@@ -190,6 +205,15 @@ export default function Dashboard() {
         />
       );
     }
+    if (device.type === 'Sensor') {
+      return (
+        <SensorCard
+          key={device.id}
+          device={device}
+          onUpdate={fetchDevices}
+        />
+      );
+    }
 
     // Default Generic Card for Light/Socket/etc.
     return (
@@ -226,6 +250,17 @@ export default function Dashboard() {
       </div>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-medium text-sm animate-pulse">Загрузка умного дома...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] transition-colors duration-500">
@@ -335,8 +370,18 @@ export default function Dashboard() {
                 <option value="AC">Air Conditioner</option>
                 <option value="Speaker">Speaker</option>
                 <option value="Camera">Camera</option>
+                <option value="Sensor">Sensor</option>
               </select>
-              <input type="text" placeholder="Brand / Source" value={source} onChange={e => setSource(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
+
+              {type === 'Sensor' && (
+                <select value={sensorType} onChange={e => setSensorType(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required>
+                  <option value="">Select Sensor Type</option>
+                  <option value="temperature">Temperature</option>
+                  <option value="motion">Motion</option>
+                  <option value="smoke">Smoke Detector</option>
+                  <option value="waterLeak">Water Leak</option>
+                </select>
+              )}
               <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setShowAddDevice(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-400 hover:text-slate-600 transition-colors">Cancel</button>
                 <button type="submit" className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20">Create</button>

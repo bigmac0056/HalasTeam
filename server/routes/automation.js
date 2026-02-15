@@ -195,6 +195,18 @@ router.post('/execute', async (req, res) => {
   }
 });
 
+// Manual trigger for scheduler (Debug/Testing)
+router.post('/execute-now', async (req, res) => {
+  try {
+    const { checkAndExecuteRules } = require('../services/scheduler');
+    await checkAndExecuteRules();
+    res.json({ success: true, message: 'Automation check triggered' });
+  } catch (error) {
+    console.error('Manual execution failed:', error);
+    res.status(500).json({ error: 'Manual execution failed' });
+  }
+});
+
 // Get automation logs
 router.get('/logs', async (req, res) => {
   try {

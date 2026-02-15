@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import React from 'react';
 
-const HVACCard = ({ name, room, status, onToggle }) => {
-    const [temp, setTemp] = useState(24);
+const HVACCard = ({ name, room, status, value, onToggle, onChange }) => {
 
     return (
         <div className={`relative group bg-white dark:bg-card-dark rounded-3xl p-6 border transition-all hover:shadow-xl ${status ? 'border-primary/20 shadow-primary/5' : 'border-slate-100 dark:border-slate-800 shadow-sm'}`}>
@@ -19,23 +18,23 @@ const HVACCard = ({ name, room, status, onToggle }) => {
 
             <div className="mb-6">
                 <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{name}</h4>
-                <p className="text-xs text-slate-400 mt-1">{room} • Cooling Mode</p>
+                <p className="text-xs text-slate-400 mt-1">{room} • Охлаждение</p>
             </div>
 
             <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                    <span className="text-3xl font-black text-slate-900 dark:text-white">{temp}°C</span>
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Target Temp</span>
+                    <span className="text-3xl font-black text-slate-900 dark:text-white">{value || 24}°C</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Целевая Темп.</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setTemp(t => t - 1)}
+                        onClick={() => onChange((value || 24) - 1)}
                         className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                     >
                         <span className="material-icons-round">remove</span>
                     </button>
                     <button
-                        onClick={() => setTemp(t => t + 1)}
+                        onClick={() => onChange((value || 24) + 1)}
                         className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                     >
                         <span className="material-icons-round">add</span>

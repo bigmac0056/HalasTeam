@@ -127,6 +127,10 @@ app.listen(PORT, () => {
   if (!process.env.OPENWEATHER_API_KEY) {
     console.warn('⚠️  OPENWEATHER_API_KEY не установлен. Функционал погоды будет недоступен.');
   }
+
+  // Start Automation Scheduler
+  const { startScheduler } = require('./services/scheduler');
+  startScheduler();
 });
 
 module.exports = app;

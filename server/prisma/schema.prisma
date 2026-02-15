@@ -59,6 +59,7 @@ model AutomationRule {
   action    String
   icon      String?
   enabled   Boolean  @default(true)
+  lastTriggeredAt DateTime?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

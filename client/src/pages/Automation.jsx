@@ -93,6 +93,7 @@ export default function Automation() {
             // Try to parse JSON
             return JSON.parse(triggerStr);
         } catch (e) {
+            console.error(e);
             // Fallback for simple strings (legacy data)
             return { type: 'time', value: triggerStr || '00:00' };
         }
@@ -103,6 +104,7 @@ export default function Automation() {
             if (typeof actionStr === 'object') return actionStr;
             return JSON.parse(actionStr);
         } catch (e) {
+            console.error(e);
             return { deviceId: 'unknown', status: false };
         }
     };
@@ -206,14 +208,14 @@ export default function Automation() {
 
                         return (
                             <div key={rule.id} className={`bg-white dark:bg-card-dark rounded-2xl p-6 shadow-sm border transition-all ${rule.enabled
-                                    ? 'border-primary/30 dark:border-primary/20'
-                                    : 'border-slate-100 dark:border-slate-800 opacity-75'
+                                ? 'border-primary/30 dark:border-primary/20'
+                                : 'border-slate-100 dark:border-slate-800 opacity-75'
                                 }`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${rule.enabled
-                                                ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/20'
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                            ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/20'
+                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
                                             }`}>
                                             <span className="material-icons-round">{rule.icon || 'smart_toy'}</span>
                                         </div>
@@ -222,6 +224,11 @@ export default function Automation() {
                                             <div className="flex items-center gap-2 text-sm text-text-muted-light dark:text-text-muted-dark">
                                                 <span className={`inline-block w-2 h-2 rounded-full ${rule.enabled ? 'bg-green-500' : 'bg-slate-300'}`}></span>
                                                 {rule.enabled ? 'Активно' : 'На паузе'}
+                                                {rule.lastTriggeredAt && (
+                                                    <span className="ml-2 text-xs opacity-70 border-l pl-2 border-slate-300 dark:border-slate-700">
+                                                        Сраб.: {new Date(rule.lastTriggeredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -229,8 +236,8 @@ export default function Automation() {
                                         <button
                                             onClick={() => toggleRule(rule.id)}
                                             className={`p-2 rounded-lg transition-colors ${rule.enabled
-                                                    ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
                                                 }`}
                                         >
                                             <span className="material-icons-round text-xl">
@@ -277,8 +284,8 @@ export default function Automation() {
                                             <div className="font-medium text-text-main-light dark:text-text-main-dark flex items-center gap-1">
                                                 <span>{targetDevice?.name || 'Устройство'}</span>
                                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${action.status
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                                                     }`}>
                                                     {action.status ? 'ВКЛ' : 'ВЫКЛ'}
                                                 </span>
@@ -325,8 +332,8 @@ export default function Automation() {
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, triggerType: 'time' })}
                                         className={`p-3 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-2 ${newRule.triggerType === 'time'
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
+                                            ? 'border-primary bg-primary/5 text-primary'
+                                            : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
                                             }`}
                                     >
                                         <span className="material-icons-round">schedule</span>
@@ -336,8 +343,8 @@ export default function Automation() {
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, triggerType: 'temperature' })}
                                         className={`p-3 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-2 ${newRule.triggerType === 'temperature'
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
+                                            ? 'border-primary bg-primary/5 text-primary'
+                                            : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-primary/50'
                                             }`}
                                     >
                                         <span className="material-icons-round">thermostat</span>
@@ -396,8 +403,8 @@ export default function Automation() {
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, actionStatus: true })}
                                         className={`p-3 rounded-xl border text-sm font-medium transition-all ${newRule.actionStatus
-                                                ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-green-500/50'
+                                            ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                            : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-green-500/50'
                                             }`}
                                     >
                                         ВКЛЮЧИТЬ
@@ -406,8 +413,8 @@ export default function Automation() {
                                         type="button"
                                         onClick={() => setNewRule({ ...newRule, actionStatus: false })}
                                         className={`p-3 rounded-xl border text-sm font-medium transition-all ${!newRule.actionStatus
-                                                ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                                                : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-red-500/50'
+                                            ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                                            : 'border-slate-200 dark:border-slate-700 text-text-muted-light dark:text-text-muted-dark hover:border-red-500/50'
                                             }`}
                                     >
                                         ВЫКЛЮЧИТЬ

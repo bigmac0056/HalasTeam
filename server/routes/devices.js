@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
 // Добавить новое устройство
 router.post('/add', async (req, res) => {
   try {
-    const { name, room, type, source } = req.body;
+    const { name, room, type, source, sensorType } = req.body;
 
     if (!name || !room || !type) {
       return res.status(400).json({ error: 'Поля name, room и type обязательны' });
@@ -40,6 +40,7 @@ router.post('/add', async (req, res) => {
       room,
       type,
       source: source || 'Unknown',
+      sensorType,
       status: false // По умолчанию выключено
     });
 
@@ -116,6 +117,41 @@ router.put('/:deviceId/brightness', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при обновлении яркости' });
+  }
+});
+
+// Обновить значение устройства (температура и т.д.)
+router.put('/:deviceId/value', async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const { value, unit } = req.body;
+
+    if (value === undefined) {
+      return res.status(400).json({ error: 'Значение value обязательно' });
+    }
+
+    const device = await findDeviceById(deviceId, req.user.id);
+    if (!device) {
+      return res.status(404).json({ error: 'Устройство не найдено' });
+    }
+
+    const { updateDeviceValue } = require('../state');
+    const updatedDevice = await updateDeviceValue(deviceId, req.user.id, value, unit);
+
+    // Trigger Sensor Automation
+    if (updatedDevice) {
+      const { checkSensorRules } = require('../services/scheduler');
+      // Run async without awaiting to not block response
+      checkSensorRules(updatedDevice).catch(err => console.error(err));
+    }
+
+    res.json({
+      message: 'Значение обновлено',
+      device: updatedDevice
+    });
+  } catch (error) {
+    console.error('Error updating value:', error);
+    res.status(500).json({ error: 'Ошибка при обновлении значения' });
   }
 });
 
