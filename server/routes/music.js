@@ -65,6 +65,25 @@ const normalizeTrackUrl = (track, req) => {
   return normalized;
 };
 
+const isSpeakerDevice = (device) => {
+  if (!device) return false;
+  const name = String(device.name || '').toLowerCase();
+  return device.type === 'Speaker' || (device.type === 'Socket' && (name.includes('speaker') || name.includes('колон')));
+};
+
+const ensureActiveSpeaker = async (userId) => {
+  const devices = await prisma.device.findMany({
+    where: { userId, status: true },
+    select: { type: true, name: true }
+  });
+  const hasActiveSpeaker = devices.some((device) => isSpeakerDevice(device));
+  if (!hasActiveSpeaker) {
+    const err = new Error('Сначала включите колонку на панели устройств');
+    err.statusCode = 400;
+    throw err;
+  }
+};
+
 const getMusicLimits = () => ({
   limitCount: Number(process.env.MUSIC_MAX_TRACKS_PER_USER || 500),
   limitBytes: Number(process.env.MUSIC_MAX_STORAGE_BYTES || 2147483648)
@@ -407,6 +426,9 @@ router.get('/playback/state', async (req, res) => {
 router.post('/playback/state', async (req, res) => {
   try {
     const { isPlaying, positionSec, currentTrackId, playlistId } = req.body;
+    if (isPlaying === true) {
+      await ensureActiveSpeaker(req.user.id);
+    }
     if (playlistId) {
       const playlist = await prisma.playlist.findFirst({
         where: { id: playlistId, userId: req.user.id }
@@ -442,6 +464,7 @@ router.post('/playback/state', async (req, res) => {
 
 router.post('/playback/play', async (req, res) => {
   try {
+    await ensureActiveSpeaker(req.user.id);
     let state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
 
     // If no state or no track, try to find a default playlist
@@ -502,7 +525,7 @@ router.post('/playback/play', async (req, res) => {
     const track = await prisma.track.findUnique({ where: { id: state.currentTrackId } });
     res.json({ ...state, currentTrack: normalizeTrackUrl(track, req) });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(e.statusCode || 500).json({ error: e.message });
   }
 });
 
@@ -515,12 +538,13 @@ router.post('/playback/pause', async (req, res) => {
     const track = state.currentTrackId ? await prisma.track.findUnique({ where: { id: state.currentTrackId } }) : null;
     res.json({ ...state, currentTrack: normalizeTrackUrl(track, req) });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(e.statusCode || 500).json({ error: e.message });
   }
 });
 
 router.post('/playback/next', async (req, res) => {
   try {
+    await ensureActiveSpeaker(req.user.id);
     const state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
     if (!state || !state.playlistId || !state.currentTrackId) {
       return res.status(400).json({ error: 'Нет активного плейлиста' });
@@ -557,12 +581,13 @@ router.post('/playback/next', async (req, res) => {
     res.json({ ...updatedState, currentTrack: normalizeTrackUrl(track, req) });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: e.message });
+    res.status(e.statusCode || 500).json({ error: e.message });
   }
 });
 
 router.post('/playback/prev', async (req, res) => {
   try {
+    await ensureActiveSpeaker(req.user.id);
     const state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
     if (!state || !state.playlistId || !state.currentTrackId) {
       return res.status(400).json({ error: 'Нет активного плейлиста' });
@@ -598,12 +623,13 @@ router.post('/playback/prev', async (req, res) => {
     const track = await prisma.track.findUnique({ where: { id: prevPt.trackId } });
     res.json({ ...updatedState, currentTrack: normalizeTrackUrl(track, req) });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(e.statusCode || 500).json({ error: e.message });
   }
 });
 
 router.post('/playback/select-playlist', async (req, res) => {
   try {
+    await ensureActiveSpeaker(req.user.id);
     const { playlistId, trackId } = req.body;
     if (!playlistId) return res.status(400).json({ error: 'playlistId required' });
 
@@ -640,7 +666,7 @@ router.post('/playback/select-playlist', async (req, res) => {
     const track = await prisma.track.findUnique({ where: { id: startTrackId } });
     res.json({ ...state, currentTrack: normalizeTrackUrl(track, req) });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(e.statusCode || 500).json({ error: e.message });
   }
 });
 

@@ -10,6 +10,7 @@ import MusicCard from '../components/Dashboard/MusicCard';
 import HVACCard from '../components/Dashboard/HVACCard';
 import CameraCard from '../components/Dashboard/CameraCard';
 import SensorCard from '../components/Dashboard/SensorCard';
+import { useMusicPlayer } from '../context/MusicPlayerContext';
 
 const modeToScenario = {
   Home: 'Прибытие домой',
@@ -30,7 +31,7 @@ const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   const [weather, setWeather] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState('Все');
   const [homeMode, setHomeMode] = useState('Home');
@@ -40,13 +41,6 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
-  const [musicPlayback, setMusicPlayback] = useState({
-    isPlaying: false,
-    currentTrack: null,
-    currentTrackId: null,
-    playlistId: null
-  });
-  const [isMusicPlaybackUpdating, setIsMusicPlaybackUpdating] = useState(false);
 
   // Add device form state
   const [name, setName] = useState('');
@@ -57,7 +51,16 @@ export default function Dashboard() {
 
   const navigate = useNavigate();
   const brightnessTimerRef = useRef({});
-  const dashboardAudioRef = useRef(null);
+  const {
+    playback,
+    isBusy: isMusicPlaybackUpdating,
+    play,
+    pause,
+    next,
+    prev,
+    seek,
+    syncFromBackend
+  } = useMusicPlayer();
 
   const fetchDevices = async () => {
     try {
@@ -106,25 +109,12 @@ export default function Dashboard() {
     }
   };
 
-  const fetchMusicPlayback = useCallback(async () => {
-    try {
-      const res = await API.get('/music/playback/state');
-      const data = res.data || {};
-      setMusicPlayback({
-        isPlaying: Boolean(data.isPlaying),
-        currentTrack: data.currentTrack || null,
-        currentTrackId: data.currentTrackId || data.currentTrack?.id || null,
-        playlistId: data.playlistId || null
-      });
-    } catch (error) {
-      console.error('Error fetching music playback state:', error);
-    }
-  }, []);
 
   const toggleDevice = async (id) => {
     try {
       await API.post('/devices/toggle', { deviceId: id });
       fetchDevices();
+      syncFromBackend();
     } catch (error) {
       console.error('Error toggling device:', error);
     }
@@ -162,6 +152,7 @@ export default function Dashboard() {
       await API.post('/settings/mode', { mode });
       setHomeMode(mode);
       fetchDevices();
+      syncFromBackend();
     } catch (error) {
       console.error('Error updating home mode:', error);
     }
@@ -192,39 +183,13 @@ export default function Dashboard() {
     }
   };
 
-  const runMusicPlaybackAction = useCallback(async (action) => {
-    setIsMusicPlaybackUpdating(true);
-    try {
-      const res = await action();
-      const data = res.data || {};
-      setMusicPlayback({
-        isPlaying: Boolean(data.isPlaying),
-        currentTrack: data.currentTrack || null,
-        currentTrackId: data.currentTrackId || data.currentTrack?.id || null,
-        playlistId: data.playlistId || null
-      });
-    } catch (error) {
-      console.error('Error updating music playback:', error);
-    } finally {
-      setIsMusicPlaybackUpdating(false);
-    }
-  }, []);
-
   const handleMusicPlayPause = useCallback(async () => {
-    if (musicPlayback.isPlaying) {
-      await runMusicPlaybackAction(() => API.post('/music/playback/pause'));
+    if (playback.isPlaying) {
+      await pause();
       return;
     }
-    await runMusicPlaybackAction(() => API.post('/music/playback/play'));
-  }, [musicPlayback.isPlaying, runMusicPlaybackAction]);
-
-  const handleMusicNext = useCallback(async () => {
-    await runMusicPlaybackAction(() => API.post('/music/playback/next'));
-  }, [runMusicPlaybackAction]);
-
-  const handleMusicPrev = useCallback(async () => {
-    await runMusicPlaybackAction(() => API.post('/music/playback/prev'));
-  }, [runMusicPlaybackAction]);
+    await play();
+  }, [pause, play, playback.isPlaying]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -239,7 +204,7 @@ export default function Dashboard() {
           fetchAutopilotState(),
           fetchAutomationLogs(),
           fetchNotifications(),
-          fetchMusicPlayback()
+          syncFromBackend()
         ]);
       } catch (error) {
         console.error("Dashboard init error:", error);
@@ -253,10 +218,9 @@ export default function Dashboard() {
     const interval = setInterval(() => {
       fetchDevices();
       fetchNotifications();
-      fetchMusicPlayback();
     }, 10000);
     return () => clearInterval(interval);
-  }, [fetchMusicPlayback, navigate]);
+  }, [navigate, syncFromBackend]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -276,31 +240,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    const audio = dashboardAudioRef.current;
-    if (!audio) return;
-
-    const trackUrl = musicPlayback.currentTrack?.fileUrl;
-    if (!trackUrl) {
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
-      return;
-    }
-
-    if (audio.src !== trackUrl) {
-      audio.src = trackUrl;
-    }
-
-    if (musicPlayback.isPlaying) {
-      audio.play().catch((error) => {
-        console.error('Dashboard audio play error:', error);
-      });
-    } else {
-      audio.pause();
-    }
-  }, [musicPlayback.currentTrack?.id, musicPlayback.currentTrack?.fileUrl, musicPlayback.isPlaying]);
-
   const rooms = ['Все', ...new Set([...ROOM_OPTIONS, ...devices.map(d => d.room).filter(Boolean)])];
   const filteredDevices = selectedRoom === 'Все' ? devices : devices.filter(d => d.room === selectedRoom);
 
@@ -312,13 +251,18 @@ export default function Dashboard() {
           name={device.name}
           room={device.room}
           status={device.status}
-          currentTrackTitle={musicPlayback.currentTrack?.title || ''}
-          isPlaying={musicPlayback.isPlaying}
+          currentTrackTitle={playback.currentTrack?.title || ''}
+          isPlaying={playback.isPlaying}
+          progressPercent={playback.progressPercent}
+          currentTimeLabel={playback.currentTimeLabel}
+          durationLabel={playback.durationLabel}
+          playbackError={playback.error}
           onToggle={() => toggleDevice(device.id)}
           onDelete={() => requestDeleteDevice(device.id, device.name)}
           onPlayPause={handleMusicPlayPause}
-          onNext={handleMusicNext}
-          onPrev={handleMusicPrev}
+          onNext={next}
+          onPrev={prev}
+          onSeek={seek}
           controlsDisabled={isMusicPlaybackUpdating}
         />
       );
@@ -404,22 +348,16 @@ export default function Dashboard() {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-medium text-sm animate-pulse">Загрузка умного дома...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b1120] transition-colors duration-500">
       <Header />
 
-      <main className="max-w-[1500px] mx-auto px-8 py-10">
+      <main className="max-w-[1500px] mx-auto px-8 py-10 pb-32">
+        {isLoading && (
+          <div className="mb-4 text-sm font-medium text-slate-500 animate-pulse">
+            Обновление данных...
+          </div>
+        )}
         <div className="flex flex-col lg:flex-row gap-10">
 
           {/* Main Dashboard Area */}
@@ -592,11 +530,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      <audio
-        ref={dashboardAudioRef}
-        preload="metadata"
-        onEnded={handleMusicNext}
-      />
     </div>
   );
 }

@@ -149,7 +149,7 @@ export default function Automation() {
         <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300">
             <Header />
 
-            <main className="max-w-[1400px] mx-auto px-8 py-12">
+            <main className="max-w-[1400px] mx-auto px-8 py-12 pb-32">
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-text-main-light dark:text-text-main-dark">Правила автоматизации</h1>

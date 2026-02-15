@@ -111,7 +111,7 @@ export default function Energy() {
         <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300 font-sans">
             <Header />
 
-            <main className="max-w-[1600px] mx-auto px-6 py-8">
+            <main className="max-w-[1600px] mx-auto px-6 py-8 pb-32">
                 <div className="mb-8 flex justify-between items-end">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Аналитика Энергии</h1>

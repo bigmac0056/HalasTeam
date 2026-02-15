@@ -26,6 +26,12 @@ const updateUser = async (id, data) => {
   });
 };
 
+const isSpeakerDevice = (device) => {
+  if (!device) return false;
+  const name = String(device.name || '').toLowerCase();
+  return device.type === 'Speaker' || (device.type === 'Socket' && (name.includes('speaker') || name.includes('колон')));
+};
+
 // Управление устройствами
 const addDevice = async (device) => {
   return await prisma.device.create({ data: device });
@@ -257,11 +263,16 @@ const setHomeMode = async (userId, mode) => {
   if (mode === 'Away' || mode === 'Vacation') {
     // Turn off all lights and heaters/AC
     for (const device of devices) {
-      if (device.status && (device.type === 'Light' || device.type === 'Heater' || device.type === 'AC' || device.type === 'Socket')) {
+      if (device.status && (device.type === 'Light' || device.type === 'Heater' || device.type === 'AC' || device.type === 'Socket' || isSpeakerDevice(device))) {
         await updateDevice(device.id, userId, { status: false });
         turnedOff.push(device.name);
       }
     }
+
+    await prisma.userPlaybackState.updateMany({
+      where: { userId },
+      data: { isPlaying: false }
+    });
 
     const message = turnedOff.length > 0
       ? `Режим "${mode}": Выключено ${turnedOff.length} устройств (${turnedOff.join(', ')})`
@@ -283,13 +294,18 @@ const setHomeMode = async (userId, mode) => {
 
     return { homeMode: settings.homeMode, message, turnedOff };
   } else if (mode === 'Night') {
-    // Turn off all lights
+    // Turn off all lights and speakers
     for (const device of devices) {
-      if (device.status && device.type === 'Light') {
+      if (device.status && (device.type === 'Light' || isSpeakerDevice(device))) {
         await updateDevice(device.id, userId, { status: false });
         turnedOff.push(device.name);
       }
     }
+
+    await prisma.userPlaybackState.updateMany({
+      where: { userId },
+      data: { isPlaying: false }
+    });
 
     const message = turnedOff.length > 0
       ? `Режим "Ночь": Выключено ${turnedOff.length} ламп (${turnedOff.join(', ')})`

@@ -4,11 +4,16 @@ const MusicCard = ({
     status,
     currentTrackTitle,
     isPlaying = false,
+    progressPercent = 0,
+    currentTimeLabel = '0:00',
+    durationLabel = '0:00',
+    playbackError = '',
     onToggle,
     onDelete,
     onPlayPause,
     onNext,
     onPrev,
+    onSeek,
     controlsDisabled = false
 }) => {
     const trackLabel = currentTrackTitle || 'Нет активного трека';
@@ -48,9 +53,29 @@ const MusicCard = ({
                 </div>
             </div>
 
-            <div className="relative h-1 bg-slate-100 dark:bg-slate-800 rounded-full mb-6 overflow-hidden">
-                <div className={`absolute top-0 left-0 h-full bg-pink-500 transition-all ${isPlaying ? 'w-1/2 shadow-[0_0_8px_rgba(236,72,153,0.5)]' : 'w-1/4'}`}></div>
+            <div className="mb-4">
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={Number.isFinite(progressPercent) ? progressPercent : 0}
+                    onChange={(event) => onSeek?.(Number(event.target.value))}
+                    disabled={controlsDisabled || !currentTrackTitle}
+                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-pink-500 bg-slate-200 dark:bg-slate-700 disabled:opacity-50"
+                    title="Перемотка"
+                />
+                <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+                    <span>{currentTimeLabel}</span>
+                    <span>{durationLabel}</span>
+                </div>
             </div>
+
+            {playbackError && (
+                <p className="mb-3 text-[11px] font-medium text-red-500">
+                    {playbackError}
+                </p>
+            )}
 
             <div className="flex justify-center items-center gap-6">
                 <button

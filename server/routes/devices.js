@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const {
+  prisma,
   getAllDevices,
   addDevice,
   findDeviceById,
@@ -9,6 +10,12 @@ const {
   addEnergyConsumption,
   deleteDevice
 } = require('../state');
+
+const isSpeakerDevice = (device) => {
+  if (!device) return false;
+  const name = String(device.name || '').toLowerCase();
+  return device.type === 'Speaker' || (device.type === 'Socket' && (name.includes('speaker') || name.includes('колон')));
+};
 
 // Все маршруты требуют аутентификации
 router.use(authMiddleware);
@@ -82,6 +89,18 @@ router.post('/toggle', async (req, res) => {
     });
 
     const updatedDevice = await findDeviceById(deviceId, req.user.id);
+
+    if (!newStatus && isSpeakerDevice(device)) {
+      const allDevices = await getAllDevices(req.user.id);
+      const hasActiveSpeaker = allDevices.some((item) => isSpeakerDevice(item) && item.status);
+      if (!hasActiveSpeaker) {
+        await prisma.userPlaybackState.updateMany({
+          where: { userId: req.user.id },
+          data: { isPlaying: false }
+        });
+      }
+    }
+
     res.json({
       message: `Устройство ${newStatus ? 'включено' : 'выключено'}`,
       device: updatedDevice
