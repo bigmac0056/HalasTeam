@@ -77,14 +77,14 @@ describe('Dashboard Page', () => {
     it('renders home mode buttons', async () => {
         renderDashboard();
 
-        const homeBtn = await screen.findByText('Дома');
-        const awayBtn = await screen.findByText('Ушел');
-        const nightBtn = await screen.findByText('Ночь');
-        const vacationBtn = await screen.findByText('Отпуск');
+        const homeBtn = await screen.findByRole('button', { name: /^Дома$/ });
+        const awayBtn = await screen.findByRole('button', { name: /^Ушел$/ });
+        const nightBtns = await screen.findAllByRole('button', { name: /^Ночь$/ });
+        const vacationBtn = await screen.findByRole('button', { name: /^Отпуск$/ });
 
         expect(homeBtn).toBeInTheDocument();
         expect(awayBtn).toBeInTheDocument();
-        expect(nightBtn).toBeInTheDocument();
+        expect(nightBtns.length).toBeGreaterThanOrEqual(1);
         expect(vacationBtn).toBeInTheDocument();
     });
 

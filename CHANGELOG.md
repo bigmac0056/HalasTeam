@@ -20,6 +20,7 @@
 - **Energy (P1)**: Added visible AI status cards (`Новые / Применено / Эффект`) and "recently applied" list.
 - **Dashboard (P1)**: Added separate quick buttons `Я ушел` and `Ночь`.
 - **Dashboard (P1)**: Added AI status summary in SmartSphere AI sidebar widget.
+- **Tests (CI)**: Updated Dashboard test selectors to handle duplicated `Ночь` button text after quick-action buttons were introduced.
 
 ## [1.5.0] - 2026-02-15
 ### Added
