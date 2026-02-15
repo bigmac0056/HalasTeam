@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const MusicCard = ({ name, status, onToggle }) => {
+const MusicCard = ({ name, room, status, onToggle, onDelete }) => {
     const [isPlaying, setIsPlaying] = useState(false);
 
     return (
@@ -12,15 +12,28 @@ const MusicCard = ({ name, status, onToggle }) => {
                     </div>
                     <div>
                         <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{name}</h4>
+                        <p className="text-xs text-slate-400 mt-1">{room}</p>
                         <p className="text-xs text-primary font-medium mt-1">Играет: Morning Jazz Mix</p>
                     </div>
                 </div>
-                <button
-                    onClick={onToggle}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${status ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-700'}`}
-                >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${status ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+                <div className="flex items-center gap-2">
+                    {onDelete && (
+                        <button
+                            type="button"
+                            onClick={onDelete}
+                            className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
+                            title="Удалить устройство"
+                        >
+                            <span className="material-icons-round text-base">delete</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={onToggle}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${status ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${status ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
             </div>
 
             <div className="relative h-1 bg-slate-100 dark:bg-slate-800 rounded-full mb-6 overflow-hidden">

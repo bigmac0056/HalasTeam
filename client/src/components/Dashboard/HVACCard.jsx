@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HVACCard = ({ name, room, status, value, onToggle, onChange }) => {
+const HVACCard = ({ name, room, status, value, onToggle, onChange = () => {}, onDelete }) => {
 
     return (
         <div className={`relative group bg-white dark:bg-card-dark rounded-3xl p-6 border transition-all hover:shadow-xl ${status ? 'border-primary/20 shadow-primary/5' : 'border-slate-100 dark:border-slate-800 shadow-sm'}`}>
@@ -8,12 +8,24 @@ const HVACCard = ({ name, room, status, value, onToggle, onChange }) => {
                 <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                     <span className="material-icons-round text-2xl">ac_unit</span>
                 </div>
-                <button
-                    onClick={onToggle}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${status ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'}`}
-                >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${status ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+                <div className="flex items-center gap-2">
+                    {onDelete && (
+                        <button
+                            type="button"
+                            onClick={onDelete}
+                            className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
+                            title="Удалить устройство"
+                        >
+                            <span className="material-icons-round text-base">delete</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={onToggle}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${status ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${status ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
             </div>
 
             <div className="mb-6">

@@ -6,7 +6,8 @@ const {
   addDevice,
   findDeviceById,
   updateDevice,
-  addEnergyConsumption
+  addEnergyConsumption,
+  deleteDevice
 } = require('../state');
 
 // Все маршруты требуют аутентификации
@@ -152,6 +153,22 @@ router.put('/:deviceId/value', async (req, res) => {
   } catch (error) {
     console.error('Error updating value:', error);
     res.status(500).json({ error: 'Ошибка при обновлении значения' });
+  }
+});
+
+// Удалить устройство
+router.delete('/:deviceId', async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const deleted = await deleteDevice(deviceId, req.user.id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Устройство не найдено' });
+    }
+
+    res.json({ message: 'Устройство удалено' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка при удалении устройства' });
   }
 });
 

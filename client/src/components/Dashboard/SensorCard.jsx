@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import API from '../../api/api';
 
-const SensorCard = ({ device, onUpdate }) => {
+const SensorCard = ({ device, onUpdate, onDelete }) => {
     // Determine alert state (assuming value 1 is alert for binary sensors)
     const isAlert = device.value === 1 || device.isAlert;
     const [loading, setLoading] = useState(false);
@@ -75,8 +75,20 @@ const SensorCard = ({ device, onUpdate }) => {
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${bgClass}`}>
                     <span className={`material-icons-round text-2xl ${colorClass}`}>{icon}</span>
                 </div>
-                <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${isAlert ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'}`}>
-                    {alertLabel}
+                <div className="flex items-center gap-2">
+                    {onDelete && (
+                        <button
+                            type="button"
+                            onClick={onDelete}
+                            className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
+                            title="Удалить устройство"
+                        >
+                            <span className="material-icons-round text-base">delete</span>
+                        </button>
+                    )}
+                    <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${isAlert ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300' : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'}`}>
+                        {alertLabel}
+                    </div>
                 </div>
             </div>
 

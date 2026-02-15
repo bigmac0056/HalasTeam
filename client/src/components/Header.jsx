@@ -113,8 +113,8 @@ const Header = () => {
             <div className="max-w-[1400px] mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-8">
                     <Link to="/dashboard" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                            <img src="/logo.png" alt="SmartSphere" className="w-7 h-7 object-contain" />
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+                            <img src="/logo.png" alt="SmartSphere" className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" />
                         </div>
                         <span className="text-2xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-400 bg-clip-text text-transparent tracking-tighter">SmartSphere</span>
                     </Link>

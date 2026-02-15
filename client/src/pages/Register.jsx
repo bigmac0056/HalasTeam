@@ -6,6 +6,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(() => {
@@ -27,6 +28,10 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('Подтвердите согласие с условиями использования и политикой конфиденциальности.');
+      return;
+    }
     setIsLoading(true);
     setError('');
 
@@ -160,10 +165,31 @@ export default function Register() {
               </div>
             </div>
 
+            <label className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <input
+                type="checkbox"
+                required
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+              />
+              <span>
+                Я принимаю{' '}
+                <Link to="/info/terms" className="text-primary hover:underline">
+                  Условия использования
+                </Link>{' '}
+                и{' '}
+                <Link to="/info/privacy" className="text-primary hover:underline">
+                  Политику конфиденциальности
+                </Link>
+                .
+              </span>
+            </label>
+
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 mt-4"
+              disabled={isLoading || !acceptedTerms}
+              className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 mt-1"
             >
               {isLoading ? 'Создание...' : 'Зарегистрироваться'}
             </button>

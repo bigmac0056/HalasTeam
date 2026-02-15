@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-const CameraCard = ({ name, room, status, onToggle }) => {
+const CameraCard = ({ name, room, status, onToggle, onDelete }) => {
     const videoRef = useRef(null);
+    const modalVideoRef = useRef(null);
     const streamRef = useRef(null);
     const [isStreaming, setIsStreaming] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     const stopStream = useCallback(() => {
         if (streamRef.current) {
@@ -14,6 +16,9 @@ const CameraCard = ({ name, room, status, onToggle }) => {
         }
         if (videoRef.current) {
             videoRef.current.srcObject = null;
+        }
+        if (modalVideoRef.current) {
+            modalVideoRef.current.srcObject = null;
         }
         setIsStreaming(false);
         setIsLoading(false);
@@ -33,6 +38,9 @@ const CameraCard = ({ name, room, status, onToggle }) => {
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 // Explicit play is handled in onLoadedMetadata, but doing it here defensively too
+            }
+            if (modalVideoRef.current) {
+                modalVideoRef.current.srcObject = stream;
             }
             setIsStreaming(true);
         } catch (err) {
@@ -67,6 +75,22 @@ const CameraCard = ({ name, room, status, onToggle }) => {
         }
     }, [status, isStreaming, isLoading, error, startStream, stopStream]);
 
+    useEffect(() => {
+        if (isPreviewOpen && modalVideoRef.current && streamRef.current) {
+            modalVideoRef.current.srcObject = streamRef.current;
+        }
+    }, [isPreviewOpen, isStreaming]);
+
+    useEffect(() => {
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') setIsPreviewOpen(false);
+        };
+        if (isPreviewOpen) {
+            window.addEventListener('keydown', onKeyDown);
+        }
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isPreviewOpen]);
+
     const handleToggle = () => {
         // Just notify parent. Parent updates DB -> status prop changes -> useEffect triggers stream.
         if (onToggle) onToggle();
@@ -80,12 +104,25 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                     <p className="text-xs text-slate-400 mt-1">{room}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    {onDelete && (
+                        <button
+                            type="button"
+                            onClick={onDelete}
+                            className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
+                            title="Удалить устройство"
+                        >
+                            <span className="material-icons-round text-base">delete</span>
+                        </button>
+                    )}
                     <div className={`w-2 h-2 rounded-full ${status && isStreaming ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{status && isStreaming ? 'Live' : 'Offline'}</span>
                 </div>
             </div>
 
-            <div className="relative aspect-video rounded-2xl bg-slate-900 overflow-hidden mb-4 group/camera">
+            <div
+                className="relative aspect-video rounded-2xl bg-slate-900 overflow-hidden mb-4 group/camera cursor-pointer"
+                onClick={() => status && isStreaming && setIsPreviewOpen(true)}
+            >
                 {error ? (
                     <div className="flex flex-col items-center justify-center h-full text-red-400">
                         <span className="material-icons-round text-4xl mb-2">videocam_off</span>
@@ -137,7 +174,64 @@ const CameraCard = ({ name, room, status, onToggle }) => {
                     <span className="material-icons-round text-sm">{status ? 'stop' : 'videocam'}</span>
                     {status ? 'Остановить' : 'Запустить'}
                 </button>
+                <button
+                    type="button"
+                    onClick={() => setIsPreviewOpen(true)}
+                    disabled={!status || !isStreaming}
+                    className="px-4 py-3 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    title="Увеличить окно камеры"
+                >
+                    <span className="material-icons-round text-sm">open_in_full</span>
+                    Увеличить
+                </button>
             </div>
+
+            {isPreviewOpen && (
+                <div
+                    className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => setIsPreviewOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+                            <div>
+                                <h4 className="font-bold text-slate-900 dark:text-white">{name}</h4>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{room}</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsPreviewOpen(false)}
+                                className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300"
+                            >
+                                <span className="material-icons-round">close</span>
+                            </button>
+                        </div>
+                        <div className="bg-black aspect-video">
+                            {status ? (
+                                <video
+                                    ref={modalVideoRef}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                    onLoadedMetadata={() => {
+                                        if (modalVideoRef.current) {
+                                            modalVideoRef.current.play().catch(() => null);
+                                        }
+                                    }}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                    <span className="material-icons-round text-5xl mb-2">videocam_off</span>
+                                    <p>Камера отключена</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

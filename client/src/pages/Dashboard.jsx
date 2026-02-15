@@ -25,6 +25,8 @@ const scenarioToMode = {
   'Отпуск': 'Vacation'
 };
 
+const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 'Коридор'];
+
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   const [weather, setWeather] = useState(null);
@@ -100,6 +102,20 @@ export default function Dashboard() {
       fetchDevices();
     } catch (error) {
       console.error('Error toggling device:', error);
+    }
+  };
+
+  const deleteDeviceById = async (id, deviceName) => {
+    const confirmed = window.confirm(`Удалить устройство "${deviceName}"?`);
+    if (!confirmed) return;
+
+    try {
+      await API.delete(`/devices/${id}`);
+      fetchDevices();
+      fetchNotifications();
+    } catch (error) {
+      console.error('Error deleting device:', error);
+      alert('Не удалось удалить устройство');
     }
   };
 
@@ -196,7 +212,7 @@ export default function Dashboard() {
     }
   }, []);
 
-  const rooms = ['Все', ...new Set(devices.map(d => d.room))];
+  const rooms = ['Все', ...new Set([...ROOM_OPTIONS, ...devices.map(d => d.room).filter(Boolean)])];
   const filteredDevices = selectedRoom === 'Все' ? devices : devices.filter(d => d.room === selectedRoom);
 
   const renderDeviceCard = (device) => {
@@ -208,6 +224,7 @@ export default function Dashboard() {
           room={device.room}
           status={device.status}
           onToggle={() => toggleDevice(device.id)}
+          onDelete={() => deleteDeviceById(device.id, device.name)}
         />
       );
     }
@@ -219,6 +236,7 @@ export default function Dashboard() {
           room={device.room}
           status={device.status}
           onToggle={() => toggleDevice(device.id)}
+          onDelete={() => deleteDeviceById(device.id, device.name)}
         />
       );
     }
@@ -230,6 +248,7 @@ export default function Dashboard() {
           room={device.room}
           status={device.status}
           onToggle={() => toggleDevice(device.id)}
+          onDelete={() => deleteDeviceById(device.id, device.name)}
         />
       );
     }
@@ -239,6 +258,7 @@ export default function Dashboard() {
           key={device.id}
           device={device}
           onUpdate={fetchDevices}
+          onDelete={() => deleteDeviceById(device.id, device.name)}
         />
       );
     }
@@ -255,12 +275,22 @@ export default function Dashboard() {
               {device.type === 'Light' ? 'lightbulb' : device.type === 'Socket' ? 'power' : 'device_hub'}
             </span>
           </div>
-          <button
-            onClick={() => toggleDevice(device.id)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${device.status ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'}`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${device.status ? 'translate-x-6' : 'translate-x-1'}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => deleteDeviceById(device.id, device.name)}
+              className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 flex items-center justify-center transition-colors"
+              title="Удалить устройство"
+            >
+              <span className="material-icons-round text-base">delete</span>
+            </button>
+            <button
+              onClick={() => toggleDevice(device.id)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${device.status ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${device.status ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
         </div>
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{device.name}</h3>
         <p className="text-xs text-slate-400 mb-4">{device.room}</p>
@@ -394,7 +424,19 @@ export default function Dashboard() {
             <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">Новое устройство</h2>
             <form onSubmit={addDevice} className="space-y-6">
               <input type="text" placeholder="Название устройства" value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
-              <input type="text" placeholder="Комната" value={room} onChange={e => setRoom(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required />
+              <select
+                value={room}
+                onChange={e => setRoom(e.target.value)}
+                className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20"
+                required
+              >
+                <option value="">Выберите комнату</option>
+                {ROOM_OPTIONS.map((roomName) => (
+                  <option key={roomName} value={roomName}>
+                    {roomName}
+                  </option>
+                ))}
+              </select>
               <select value={type} onChange={e => setType(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20" required>
                 <option value="">Выберите тип</option>
                 <option value="Light">Свет</option>
