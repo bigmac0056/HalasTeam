@@ -224,42 +224,5 @@ router.post('/logs', async (req, res) => {
   }
 });
 
-// Clear automation logs
-router.delete('/logs', async (req, res) => {
-  try {
-    const { before, all } = req.query;
-    const userId = req.user.id;
-    let where = { userId };
-
-    if (all === 'true') {
-      // Delete all logs for user
-    } else if (before) {
-      // Delete logs before a specific date
-      const date = new Date(before);
-      if (isNaN(date.getTime())) {
-        return res.status(400).json({ error: 'Invalid date format' });
-      }
-      where.timestamp = { lt: date };
-    } else {
-      return res.status(400).json({ error: 'Specify ?all=true or ?before=YYYY-MM-DD' });
-    }
-
-    const batch = await prisma.automationLog.deleteMany({ where });
-
-    // Add a system log about the cleanup
-    if (batch.count > 0) {
-      await addAutomationLog({
-        userId,
-        message: `🧹 Журнал очищен: удалено ${batch.count} записей`
-      });
-    }
-
-    res.json({ success: true, count: batch.count });
-  } catch (error) {
-    console.error('Error clearing logs:', error);
-    res.status(500).json({ error: 'Failed to clear logs' });
-  }
-});
-
 
 module.exports = router;
