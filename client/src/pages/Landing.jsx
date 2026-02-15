@@ -20,7 +20,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300 font-sans">
-      <div className="bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]">
+      <div className="bg-[url('/grid.svg')] bg-center">
         {/* Navigation */}
         <nav className="p-6 flex justify-between items-center max-w-7xl mx-auto w-full relative z-10">
           <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export default function Landing() {
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Продукт</h4>
-                <ul className="space-y-4 text-sm text-slate-200 dark:text-slate-100 font-semibold">
+                <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
                   <li><a className="hover:text-primary transition-colors" href="#">Функции</a></li>
                   <li><a className="hover:text-primary transition-colors" href="#">Интеграции</a></li>
                   <li><a className="hover:text-primary transition-colors" href="#">Цены</a></li>
@@ -246,7 +246,7 @@ export default function Landing() {
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Ресурсы</h4>
-                <ul className="space-y-4 text-sm text-slate-200 dark:text-slate-100 font-semibold">
+                <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
                   <li><a className="hover:text-primary transition-colors" href="#">Документация</a></li>
                   <li><a className="hover:text-primary transition-colors" href="#">API</a></li>
                   <li><a className="hover:text-primary transition-colors" href="#">Сообщество</a></li>
@@ -256,7 +256,7 @@ export default function Landing() {
 
               <div>
                 <h4 className="font-bold mb-6 text-slate-950 dark:text-white uppercase text-xs tracking-widest">Компания</h4>
-                <ul className="space-y-4 text-sm text-slate-200 dark:text-slate-100 font-semibold">
+                <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300 font-semibold">
                   <li><a className="hover:text-primary transition-colors" href="#">О нас</a></li>
                   <li><a className="hover:text-primary transition-colors" href="#">Карьера</a></li>
                   <li><a className="hover:text-primary transition-colors" href="#">Контакты</a></li>
@@ -265,7 +265,7 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-200 dark:text-slate-300 font-bold">
+            <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600 dark:text-slate-300 font-bold">
               <p>© 2026 SmartSphere by HalasTeam. Все права защищены.</p>
               <div className="flex gap-6">
                 <a className="hover:text-primary transition-colors" href="#">Условия использования</a>

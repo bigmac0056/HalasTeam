@@ -1,4 +1,20 @@
-const SmartSphereAI = ({ autoPilot = false, onToggleAutoPilot, isAutoPilotUpdating = false }) => {
+import { useState } from 'react';
+
+const SCENARIOS = ['Прибытие домой', 'Ночной режим', 'Ушел из дома', 'Отпуск'];
+
+const SmartSphereAI = ({
+  autoPilot = false,
+  onToggleAutoPilot,
+  isAutoPilotUpdating = false,
+  scenario = 'Прибытие домой',
+  onScenarioSelect
+}) => {
+  const [isScenarioOpen, setIsScenarioOpen] = useState(false);
+
+  const handleScenarioClick = (value) => {
+    if (onScenarioSelect) onScenarioSelect(value);
+    setIsScenarioOpen(false);
+  };
 
   return (
     <div className="bg-white dark:bg-card-dark rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm transition-all h-fit animate-fade-in-right">
@@ -40,14 +56,38 @@ const SmartSphereAI = ({ autoPilot = false, onToggleAutoPilot, isAutoPilotUpdati
           </button>
         </div>
 
-        {/* Action Button/Dropdown simulation */}
-        <div className="group flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-primary/10 transition-all cursor-pointer">
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Сценарий: Прибытие домой
-          </span>
-          <span className="material-icons-round text-slate-400 group-hover:text-primary transition-colors">
-            unfold_more
-          </span>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsScenarioOpen((prev) => !prev)}
+            className="w-full group flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-primary/10 transition-all cursor-pointer"
+          >
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Сценарий: {scenario}
+            </span>
+            <span className={`material-icons-round text-slate-400 group-hover:text-primary transition-all ${isScenarioOpen ? 'rotate-180' : ''}`}>
+              expand_more
+            </span>
+          </button>
+
+          {isScenarioOpen && (
+            <div className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
+              {SCENARIOS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => handleScenarioClick(item)}
+                  className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                    item === scenario
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

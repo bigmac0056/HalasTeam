@@ -11,6 +11,20 @@ import HVACCard from '../components/Dashboard/HVACCard';
 import CameraCard from '../components/Dashboard/CameraCard';
 import SensorCard from '../components/Dashboard/SensorCard';
 
+const modeToScenario = {
+  Home: 'Прибытие домой',
+  Night: 'Ночной режим',
+  Away: 'Ушел из дома',
+  Vacation: 'Отпуск'
+};
+
+const scenarioToMode = {
+  'Прибытие домой': 'Home',
+  'Ночной режим': 'Night',
+  'Ушел из дома': 'Away',
+  'Отпуск': 'Vacation'
+};
+
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   const [weather, setWeather] = useState(null);
@@ -341,6 +355,11 @@ export default function Dashboard() {
               autoPilot={autoPilotEnabled}
               onToggleAutoPilot={updateAutoPilot}
               isAutoPilotUpdating={isAutoPilotUpdating}
+              scenario={modeToScenario[homeMode] || 'Прибытие домой'}
+              onScenarioSelect={(scenario) => {
+                const mode = scenarioToMode[scenario];
+                if (mode) updateHomeMode(mode);
+              }}
             />
 
             {/* Automation Logs Sidebar version */}
