@@ -4,21 +4,41 @@ const path = require('path');
 
 const FONTS_DIR = path.join(__dirname, '../assets/fonts');
 
+const isValidFontFile = (fontPath) => {
+    try {
+        if (!fs.existsSync(fontPath)) return false;
+        const fd = fs.openSync(fontPath, 'r');
+        const header = Buffer.alloc(4);
+        fs.readSync(fd, header, 0, 4, 0);
+        fs.closeSync(fd);
+        const signature = header.toString('ascii');
+        // TrueType/OpenType signatures
+        return signature === 'OTTO' || signature === 'ttcf' || signature === 'true' || header.equals(Buffer.from([0x00, 0x01, 0x00, 0x00]));
+    } catch {
+        return false;
+    }
+};
+
+const isUsablePair = (pair) => isValidFontFile(pair.regular) && isValidFontFile(pair.bold);
+
 const resolveFonts = () => {
     const robotoRegular = path.join(FONTS_DIR, 'Roboto-Regular.ttf');
     const robotoBold = path.join(FONTS_DIR, 'Roboto-Bold.ttf');
 
-    if (fs.existsSync(robotoRegular) && fs.existsSync(robotoBold)) {
+    if (isUsablePair({ regular: robotoRegular, bold: robotoBold })) {
         return { regular: robotoRegular, bold: robotoBold };
     }
 
     // Fallback candidates
     const CANDIDATES = [
         { regular: '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf', bold: '/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf' },
-        { regular: '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf' }
+        { regular: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', bold: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' },
+        { regular: '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf', bold: '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf' },
+        { regular: '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf' },
+        { regular: '/System/Library/Fonts/Supplemental/Arial.ttf', bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf' }
     ];
 
-    const selected = CANDIDATES.find(pair => fs.existsSync(pair.regular) && fs.existsSync(pair.bold));
+    const selected = CANDIDATES.find((pair) => isUsablePair(pair));
 
     if (selected) return selected;
 
@@ -33,14 +53,18 @@ const generateEnergyReport = async (data) => {
             const buffers = [];
             const fonts = resolveFonts();
 
-            // Register fonts if not standard
+            let fontRegular = 'Helvetica';
+            let fontBold = 'Helvetica-Bold';
             if (fonts.regular !== 'Helvetica') {
-                doc.registerFont('Regular', fonts.regular);
-                doc.registerFont('Bold', fonts.bold);
+                try {
+                    doc.registerFont('Regular', fonts.regular);
+                    doc.registerFont('Bold', fonts.bold);
+                    fontRegular = 'Regular';
+                    fontBold = 'Bold';
+                } catch (fontError) {
+                    console.warn('[pdfService] Font registration failed, fallback to Helvetica:', fontError.message);
+                }
             }
-
-            const fontRegular = fonts.regular === 'Helvetica' ? 'Helvetica' : 'Regular';
-            const fontBold = fonts.bold === 'Helvetica-Bold' ? 'Helvetica-Bold' : 'Bold';
 
             doc.on('data', buffers.push.bind(buffers));
             doc.on('end', () => resolve(Buffer.concat(buffers)));
