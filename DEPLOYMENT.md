@@ -6,6 +6,7 @@ This project is ready for deployment on Vercel (Frontend) and Render/Railway (Ba
 
 ### Prerequisites
 - GitHub Repository connected.
+- **PostgreSQL Database** (Neon.tech, Supabase, or Render PostgreSQL).
 - Environment Variables ready.
 
 ### Environment Variables
@@ -13,7 +14,7 @@ Set these in your hosting dashboard:
 ```env
 PORT=3000
 NODE_ENV=production
-DATABASE_URL=postgres://user:password@host:port/dbname (from Supabase/Neon/etc)
+DATABASE_URL=postgres://user:password@host:port/dbname?sslmode=require
 JWT_SECRET=your-production-secret-key-min-32-chars
 ALLOWED_ORIGINS=https://your-frontend-domain.com
 # Google OAuth
@@ -26,15 +27,15 @@ FRONTEND_URL=https://your-frontend-domain.com
 ### Build Command
 ```bash
 npm install
-# If using Prisma
 npx prisma generate
-npx prisma migrate deploy
 ```
 
 ### Start Command
 ```bash
-node server/index.js
+# This will push the schema to the DB on start (good for MVP/Indie hackers)
+npx prisma db push && node index.js
 ```
+*Note: For larger teams, use `npx prisma migrate deploy` instead of `db push`.*
 
 ### Health Check
 Configure health check path to: `/health`
