@@ -11,6 +11,7 @@ A modern fullstack Smart Home System for managing IoT devices, monitoring weathe
 - 🔐 **User Authentication** - Secure JWT-based authentication
 - 🏡 **Device Management** - Control multiple IoT devices across different rooms
 - 🌤️ **Weather Integration** - Real-time weather data from Open-Meteo API
+- 🎵 **Music Module** - Library management, drag & drop uploads, playlists, and seamless playback.
 - 📊 **Energy Analytics** - Track and analyze energy consumption patterns
 - 🤖 **Smart Automation** - Rule-based automation engine with intelligent recommendations
 - 💡 **Multi-Device Support** - Lights, thermostats, security systems, and more

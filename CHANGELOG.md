@@ -13,6 +13,8 @@
 ## [1.5.0] - 2026-02-15
 ### Added
 - **Music**: Full music module with library, playlists, and playback.
+- **Music**: Drag & Drop upload + "Add to Playlist" feature.
+- **Music**: Real playback controls in Dashboard MusicCard.
 - **Storage**: Hybrid storage service (Local/S3).
 - **Database**: New Prisma models for Tracks, Playlists, and PlaybackState.
 - **UI**: New Music page and updated Dashboard MusicCard.

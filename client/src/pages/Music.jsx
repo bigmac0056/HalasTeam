@@ -14,6 +14,10 @@ export default function Music() {
     const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState('');
 
+    const [showAddToPlaylist, setShowAddToPlaylist] = useState(false);
+    const [selectedTrackId, setSelectedTrackId] = useState(null);
+    const [dragActive, setDragActive] = useState(false);
+
     useEffect(() => {
         fetchTracks();
         fetchPlaylists();
@@ -34,6 +38,25 @@ export default function Music() {
             setPlaylists(res.data);
         } catch (e) {
             console.error(e);
+        }
+    };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileUpload({ target: { files: e.dataTransfer.files } });
         }
     };
 
@@ -87,6 +110,28 @@ export default function Music() {
         }
     };
 
+    const addToPlaylist = async (playlistId) => {
+        try {
+            await API.post(`/music/playlists/${playlistId}/tracks`, { trackId: selectedTrackId });
+            setShowAddToPlaylist(false);
+            setSelectedTrackId(null);
+            fetchPlaylists(); // Update counts
+            alert('Трек добавлен!');
+        } catch (e) {
+            alert(e.response?.data?.error || 'Ошибка');
+        }
+    };
+
+    const playPlaylist = async (playlistId) => {
+        try {
+            await API.post('/music/playback/select-playlist', { playlistId });
+            // Redirect or show success (UI updates via polling in MusicCard)
+        } catch (e) {
+            console.error(e);
+            alert('Ошибка воспроизведения: ' + (e.response?.data?.error || e.message));
+        }
+    };
+
     const formatTime = (sec) => {
         if (!sec) return '--:--';
         const m = Math.floor(sec / 60);
@@ -127,7 +172,13 @@ export default function Music() {
                 {activeTab === 'library' && (
                     <div className="space-y-8 animate-fade-in">
                         {/* Upload Area */}
-                        <div className="bg-white dark:bg-card-dark rounded-3xl p-8 border border-slate-200 dark:border-slate-800 border-dashed text-center">
+                        <div
+                            className={`bg-white dark:bg-card-dark rounded-3xl p-8 border-2 border-dashed text-center transition-colors ${dragActive ? 'border-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800'}`}
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                        >
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -142,8 +193,10 @@ export default function Music() {
                             >
                                 <span className="material-icons-round text-3xl">cloud_upload</span>
                             </button>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Загрузить треки</h3>
-                            <p className="text-slate-500 text-sm mb-4">MP3, WAV, OGG (max 20MB)</p>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                                {isUploading ? 'Загрузка...' : 'Загрузить треки'}
+                            </h3>
+                            <p className="text-slate-500 text-sm mb-4">Перетащите файлы сюда или нажмите для выбора</p>
 
                             {isUploading && (
                                 <div className="max-w-md mx-auto">
@@ -153,7 +206,7 @@ export default function Music() {
                                             style={{ width: `${uploadProgress}%` }}
                                         ></div>
                                     </div>
-                                    <p className="text-xs text-primary font-bold mt-2">Загрузка {uploadProgress}%</p>
+                                    <p className="text-xs text-primary font-bold mt-2">{uploadProgress}%</p>
                                 </div>
                             )}
                         </div>
@@ -177,10 +230,18 @@ export default function Music() {
                                             <td className="px-6 py-4 text-slate-500">{track.artist}</td>
                                             <td className="px-6 py-4 text-slate-500 text-sm font-mono">{formatTime(track.durationSec)}</td>
                                             <td className="px-6 py-4 text-slate-500 text-xs">{formatSize(track.sizeBytes)}</td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => { setSelectedTrackId(track.id); setShowAddToPlaylist(true); }}
+                                                    className="p-2 text-slate-400 hover:text-primary transition-colors"
+                                                    title="Добавить в плейлист"
+                                                >
+                                                    <span className="material-icons-round text-lg">playlist_add</span>
+                                                </button>
                                                 <button
                                                     onClick={() => handleDeleteTrack(track.id)}
                                                     className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                                    title="Удалить"
                                                 >
                                                     <span className="material-icons-round text-lg">delete</span>
                                                 </button>
@@ -212,12 +273,19 @@ export default function Music() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {playlists.map(pl => (
-                                <div key={pl.id} className="bg-white dark:bg-card-dark rounded-3xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all group">
+                                <div key={pl.id} className="bg-white dark:bg-card-dark rounded-3xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all group relative">
                                     <div className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-2xl mb-4 flex items-center justify-center text-slate-300 dark:text-slate-600">
                                         <span className="material-icons-round text-6xl">queue_music</span>
                                     </div>
                                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">{pl.name}</h3>
                                     <p className="text-sm text-slate-500">{pl._count?.tracks || 0} треков</p>
+
+                                    <button
+                                        onClick={() => playPlaylist(pl.id)}
+                                        className="absolute bottom-6 right-6 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                    >
+                                        <span className="material-icons-round text-2xl">play_arrow</span>
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -255,6 +323,37 @@ export default function Music() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add To Playlist Modal */}
+            {showAddToPlaylist && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-card-dark rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-scale-in">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Выберите плейлист</h3>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {playlists.map(pl => (
+                                <button
+                                    key={pl.id}
+                                    onClick={() => addToPlaylist(pl.id)}
+                                    className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 flex justify-between items-center transition-colors"
+                                >
+                                    <span className="font-bold text-slate-700 dark:text-slate-200">{pl.name}</span>
+                                    <span className="text-xs text-slate-400">{pl._count?.tracks || 0} треков</span>
+                                </button>
+                            ))}
+                            {playlists.length === 0 && (
+                                <p className="text-center text-slate-500 py-4">Нет плейлистов</p>
+                            )}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowAddToPlaylist(false)}
+                            className="w-full mt-6 py-3 font-bold text-slate-400"
+                        >
+                            Отмена
+                        </button>
                     </div>
                 </div>
             )}

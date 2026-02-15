@@ -352,6 +352,12 @@ router.get('/playback/state', async (req, res) => {
     const state = await prisma.userPlaybackState.findUnique({
       where: { userId: req.user.id }
     });
+
+    if (state && state.currentTrackId) {
+      const track = await prisma.track.findUnique({ where: { id: state.currentTrackId } });
+      return res.json({ ...state, currentTrack: track });
+    }
+
     res.json(state || { isPlaying: false, positionSec: 0 });
   } catch (e) {
     res.status(500).json({ error: 'Ошибка при получении состояния плеера' });
@@ -369,6 +375,176 @@ router.post('/playback/state', async (req, res) => {
     res.json(state);
   } catch (e) {
     res.status(500).json({ error: 'Ошибка при обновлении состояния плеера' });
+  }
+});
+
+router.post('/playback/play', async (req, res) => {
+  try {
+    let state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
+
+    // If no state or no track, try to find a default playlist
+    if (!state || !state.currentTrackId) {
+      const playlist = await prisma.playlist.findFirst({
+        where: { userId: req.user.id },
+        include: { tracks: { orderBy: { position: 'asc' }, take: 1 } }
+      });
+
+      if (playlist && playlist.tracks.length > 0) {
+        state = await prisma.userPlaybackState.upsert({
+          where: { userId: req.user.id },
+          create: {
+            userId: req.user.id,
+            playlistId: playlist.id,
+            currentTrackId: playlist.tracks[0].trackId,
+            isPlaying: true
+          },
+          update: {
+            playlistId: playlist.id,
+            currentTrackId: playlist.tracks[0].trackId,
+            isPlaying: true
+          }
+        });
+      } else {
+        // Fallback: just play random track from library?
+        // For now return error if nothing to play
+        return res.status(400).json({ error: 'Нет активного трека или плейлиста' });
+      }
+    } else {
+      state = await prisma.userPlaybackState.update({
+        where: { userId: req.user.id },
+        data: { isPlaying: true }
+      });
+    }
+
+    // Return full track info
+    const track = await prisma.track.findUnique({ where: { id: state.currentTrackId } });
+    res.json({ ...state, currentTrack: track });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/playback/pause', async (req, res) => {
+  try {
+    const state = await prisma.userPlaybackState.update({
+      where: { userId: req.user.id },
+      data: { isPlaying: false }
+    });
+    const track = state.currentTrackId ? await prisma.track.findUnique({ where: { id: state.currentTrackId } }) : null;
+    res.json({ ...state, currentTrack: track });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/playback/next', async (req, res) => {
+  try {
+    const state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
+    if (!state || !state.playlistId || !state.currentTrackId) {
+      return res.status(400).json({ error: 'Нет активного плейлиста' });
+    }
+
+    const currentPt = await prisma.playlistTrack.findFirst({
+      where: { playlistId: state.playlistId, trackId: state.currentTrackId }
+    });
+
+    if (!currentPt) return res.status(400).json({ error: 'Трек не найден в плейлисте' });
+
+    // Find next track
+    let nextPt = await prisma.playlistTrack.findFirst({
+      where: { playlistId: state.playlistId, position: { gt: currentPt.position } },
+      orderBy: { position: 'asc' }
+    });
+
+    // Loop to start
+    if (!nextPt) {
+      nextPt = await prisma.playlistTrack.findFirst({
+        where: { playlistId: state.playlistId },
+        orderBy: { position: 'asc' }
+      });
+    }
+
+    if (!nextPt) return res.status(400).json({ error: 'Плейлист пуст' });
+
+    const updatedState = await prisma.userPlaybackState.update({
+      where: { userId: req.user.id },
+      data: { currentTrackId: nextPt.trackId, positionSec: 0, isPlaying: true }
+    });
+
+    const track = await prisma.track.findUnique({ where: { id: nextPt.trackId } });
+    res.json({ ...updatedState, currentTrack: track });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/playback/prev', async (req, res) => {
+  try {
+    const state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
+    if (!state || !state.playlistId || !state.currentTrackId) {
+      return res.status(400).json({ error: 'Нет активного плейлиста' });
+    }
+
+    const currentPt = await prisma.playlistTrack.findFirst({
+      where: { playlistId: state.playlistId, trackId: state.currentTrackId }
+    });
+
+    if (!currentPt) return res.status(400).json({ error: 'Трек не найден в плейлисте' });
+
+    // Find prev track
+    let prevPt = await prisma.playlistTrack.findFirst({
+      where: { playlistId: state.playlistId, position: { lt: currentPt.position } },
+      orderBy: { position: 'desc' }
+    });
+
+    // Loop to end
+    if (!prevPt) {
+      prevPt = await prisma.playlistTrack.findFirst({
+        where: { playlistId: state.playlistId },
+        orderBy: { position: 'desc' }
+      });
+    }
+
+    if (!prevPt) return res.status(400).json({ error: 'Плейлист пуст' });
+
+    const updatedState = await prisma.userPlaybackState.update({
+      where: { userId: req.user.id },
+      data: { currentTrackId: prevPt.trackId, positionSec: 0, isPlaying: true }
+    });
+
+    const track = await prisma.track.findUnique({ where: { id: prevPt.trackId } });
+    res.json({ ...updatedState, currentTrack: track });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/playback/select-playlist', async (req, res) => {
+  try {
+    const { playlistId, trackId } = req.body;
+    if (!playlistId) return res.status(400).json({ error: 'playlistId required' });
+
+    let startTrackId = trackId;
+    if (!startTrackId) {
+      const firstPt = await prisma.playlistTrack.findFirst({
+        where: { playlistId },
+        orderBy: { position: 'asc' }
+      });
+      if (!firstPt) return res.status(400).json({ error: 'Плейлист пуст' });
+      startTrackId = firstPt.trackId;
+    }
+
+    const state = await prisma.userPlaybackState.upsert({
+      where: { userId: req.user.id },
+      create: { userId: req.user.id, playlistId, currentTrackId: startTrackId, isPlaying: true, positionSec: 0 },
+      update: { playlistId, currentTrackId: startTrackId, isPlaying: true, positionSec: 0 }
+    });
+
+    const track = await prisma.track.findUnique({ where: { id: startTrackId } });
+    res.json({ ...state, currentTrack: track });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
