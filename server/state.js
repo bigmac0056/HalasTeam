@@ -197,8 +197,14 @@ const clearNotifications = async (userId) => {
 
 // Home Mode Helper
 const getHomeMode = async (userId) => {
-  const settings = await prisma.userSettings.findUnique({ where: { userId } });
-  return settings ? settings.homeMode : 'Home';
+  try {
+    if (!userId) return 'Home';
+    const settings = await prisma.userSettings.findUnique({ where: { userId } });
+    return settings ? settings.homeMode : 'Home';
+  } catch (error) {
+    console.error('Error in getHomeMode:', error);
+    return 'Home';
+  }
 };
 
 const setHomeMode = async (userId, mode) => {

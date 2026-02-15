@@ -12,14 +12,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
     }
 
-    const existingUser = findUserByEmail(email);
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = addUser({
+    const user = await addUser({
       email,
       password: hashedPassword,
       name
@@ -53,7 +53,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email и пароль обязательны' });
     }
 
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ error: 'Неверный email или пароль' });
     }
