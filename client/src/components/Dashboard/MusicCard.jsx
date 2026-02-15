@@ -91,7 +91,7 @@ const MusicCard = ({
                     type="button"
                     onClick={onPlayPause}
                     disabled={controlsDisabled}
-                    className="w-12 h-12 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shadow-lg shadow-pink-200 dark:shadow-none hover:scale-110 transition-transform disabled:opacity-40"
+                    className="w-12 h-12 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center shadow-lg shadow-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:shadow-none hover:scale-110 transition-transform disabled:opacity-40"
                     title={isPlaying ? 'Пауза' : 'Воспроизвести'}
                 >
                     <span className="material-icons-round text-2xl">{isPlaying ? 'pause' : 'play_arrow'}</span>

@@ -169,7 +169,7 @@ export function MusicPlayerProvider({ children }) {
       await applyServerState(res.data, options);
       return true;
     } catch (error) {
-      if (error.message !== 'No active speaker') {
+      if (error.message !== 'No active speaker' && !options.silentOnFailure) {
         console.error('Playback action failed:', error);
         setPlayback((prev) => ({
           ...prev,
@@ -269,6 +269,18 @@ export function MusicPlayerProvider({ children }) {
     }
   }, [playback.currentTrackId, playback.playlistId]);
 
+  const advanceToNextOrStop = useCallback(async () => {
+    const advanced = await runAction(() => API.post('/music/playback/next'), {
+      requireSpeaker: true,
+      forcePlay: true,
+      silentOnFailure: true
+    });
+
+    if (!advanced) {
+      await pauseBySystem();
+    }
+  }, [pauseBySystem, runAction]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return undefined;
@@ -279,7 +291,7 @@ export function MusicPlayerProvider({ children }) {
       setPlayback((prev) => ({ ...prev, error: '' }));
     };
     const onEnded = () => {
-      pauseBySystem();
+      void advanceToNextOrStop();
     };
     const onError = () => {
       setPlayback((prev) => ({ ...prev, isPlaying: false, error: 'Файл трека недоступен. Загрузите трек заново.' }));
@@ -296,7 +308,7 @@ export function MusicPlayerProvider({ children }) {
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('error', onError);
     };
-  }, [pauseBySystem, updateProgressFromAudio]);
+  }, [advanceToNextOrStop, updateProgressFromAudio]);
 
   useEffect(() => {
     syncFromBackend();

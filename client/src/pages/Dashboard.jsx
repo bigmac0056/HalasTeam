@@ -29,6 +29,19 @@ const scenarioToMode = {
 const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 'Коридор'];
 const DEFAULT_WEATHER_COORDS = { lat: 51.1694, lon: 71.4491 };
 
+const createClientWeatherFallback = (city = 'Астана') => {
+  const hour = new Date().getHours();
+  const isDay = hour >= 7 && hour < 20;
+
+  return {
+    temperature: 22,
+    windspeed: 0,
+    weathercode: isDay ? 2 : 0,
+    isDay,
+    city
+  };
+};
+
 export default function Dashboard() {
   const [devices, setDevices] = useState([]);
   const [weather, setWeather] = useState(null);
@@ -229,9 +242,12 @@ export default function Dashboard() {
         const res = await API.get('/weather', {
           params: { lat, lon }
         });
-        setWeather(res.data);
+        const weatherData = res.data || {};
+        const hasTemperature = Number.isFinite(Number(weatherData.temperature ?? weatherData.temp));
+        setWeather(hasTemperature ? weatherData : createClientWeatherFallback(weatherData.city || 'Астана'));
       } catch (error) {
         console.error('Error loading weather:', error);
+        setWeather(createClientWeatherFallback());
       }
     };
 

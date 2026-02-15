@@ -546,8 +546,33 @@ router.post('/playback/next', async (req, res) => {
   try {
     await ensureActiveSpeaker(req.user.id);
     const state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
-    if (!state || !state.playlistId || !state.currentTrackId) {
-      return res.status(400).json({ error: 'Нет активного плейлиста' });
+    if (!state || !state.currentTrackId) {
+      return res.status(400).json({ error: 'Нет активного трека' });
+    }
+
+    // If playback is not bound to a playlist, cycle through user library.
+    if (!state.playlistId) {
+      const library = await prisma.track.findMany({
+        where: { userId: req.user.id },
+        select: { id: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+      });
+
+      if (library.length === 0) {
+        return res.status(400).json({ error: 'Библиотека пуста' });
+      }
+
+      const currentIndex = library.findIndex((track) => track.id === state.currentTrackId);
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      const nextTrackId = library[(safeIndex + 1) % library.length].id;
+
+      const updatedState = await prisma.userPlaybackState.update({
+        where: { userId: req.user.id },
+        data: { currentTrackId: nextTrackId, positionSec: 0, isPlaying: true, playlistId: null }
+      });
+
+      const track = await prisma.track.findUnique({ where: { id: nextTrackId } });
+      return res.json({ ...updatedState, currentTrack: normalizeTrackUrl(track, req) });
     }
 
     const currentPt = await prisma.playlistTrack.findFirst({
@@ -589,8 +614,34 @@ router.post('/playback/prev', async (req, res) => {
   try {
     await ensureActiveSpeaker(req.user.id);
     const state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
-    if (!state || !state.playlistId || !state.currentTrackId) {
-      return res.status(400).json({ error: 'Нет активного плейлиста' });
+    if (!state || !state.currentTrackId) {
+      return res.status(400).json({ error: 'Нет активного трека' });
+    }
+
+    // If playback is not bound to a playlist, cycle through user library.
+    if (!state.playlistId) {
+      const library = await prisma.track.findMany({
+        where: { userId: req.user.id },
+        select: { id: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }]
+      });
+
+      if (library.length === 0) {
+        return res.status(400).json({ error: 'Библиотека пуста' });
+      }
+
+      const currentIndex = library.findIndex((track) => track.id === state.currentTrackId);
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      const prevIndex = safeIndex === 0 ? library.length - 1 : safeIndex - 1;
+      const prevTrackId = library[prevIndex].id;
+
+      const updatedState = await prisma.userPlaybackState.update({
+        where: { userId: req.user.id },
+        data: { currentTrackId: prevTrackId, positionSec: 0, isPlaying: true, playlistId: null }
+      });
+
+      const track = await prisma.track.findUnique({ where: { id: prevTrackId } });
+      return res.json({ ...updatedState, currentTrack: normalizeTrackUrl(track, req) });
     }
 
     const currentPt = await prisma.playlistTrack.findFirst({

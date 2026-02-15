@@ -93,35 +93,45 @@ async function resolveCity(lat, lon) {
 }
 
 async function getWeather(lat, lon) {
-  try {
-    const [weatherResponse, city] = await Promise.all([
-      axios.get(
-        "https://api.open-meteo.com/v1/forecast",
-        {
-          params: {
-            latitude: lat,
-            longitude: lon,
-            current_weather: true,
-            timezone: "auto",
-          },
-          timeout: 5000,
-        }
-      ),
-      resolveCity(lat, lon),
-    ]);
+  const city = await resolveCity(lat, lon);
 
-    const weather = weatherResponse.data.current_weather;
+  const fallback = {
+    temperature: 22,
+    windspeed: 0,
+    weathercode: 2,
+    isDay: true,
+    city: city || "Астана",
+  };
+
+  try {
+    const weatherResponse = await axios.get(
+      "https://api.open-meteo.com/v1/forecast",
+      {
+        params: {
+          latitude: lat,
+          longitude: lon,
+          current_weather: true,
+          timezone: "auto",
+        },
+        timeout: 5000,
+      }
+    );
+
+    const weather = weatherResponse?.data?.current_weather;
+    if (!weather) {
+      return fallback;
+    }
 
     return {
-      temperature: weather.temperature,
-      windspeed: weather.windspeed,
-      weathercode: weather.weathercode,
+      temperature: Number.isFinite(Number(weather.temperature)) ? Number(weather.temperature) : fallback.temperature,
+      windspeed: Number.isFinite(Number(weather.windspeed)) ? Number(weather.windspeed) : fallback.windspeed,
+      weathercode: Number.isFinite(Number(weather.weathercode)) ? Number(weather.weathercode) : fallback.weathercode,
       isDay: weather.is_day === 1,
       city: city || "Не определен",
     };
   } catch (error) {
     console.error("Ошибка Open-Meteo:", error.message);
-    throw new Error("Ошибка при получении данных о погоде");
+    return fallback;
   }
 }
 
