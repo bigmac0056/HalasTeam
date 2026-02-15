@@ -1,50 +1,29 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const path = require('path');
 
-const FONT_CANDIDATES = [
-    {
-        regular: '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',
-        bold: '/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf'
-    },
-    {
-        regular: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-        bold: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
-    },
-    {
-        regular: '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
-        bold: '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
-    },
-    {
-        regular: '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
-        bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf'
-    },
-    {
-        regular: '/System/Library/Fonts/Supplemental/Arial.ttf',
-        bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf'
-    },
-    {
-        regular: '/Library/Fonts/Arial Unicode.ttf',
-        bold: '/Library/Fonts/Arial Bold.ttf'
-    }
-];
+const FONTS_DIR = path.join(__dirname, '../assets/fonts');
 
 const resolveFonts = () => {
-    const envRegular = process.env.PDF_FONT_REGULAR_PATH;
-    const envBold = process.env.PDF_FONT_BOLD_PATH;
-    if (envRegular && envBold && fs.existsSync(envRegular) && fs.existsSync(envBold)) {
-        return { regular: envRegular, bold: envBold };
+    const robotoRegular = path.join(FONTS_DIR, 'Roboto-Regular.ttf');
+    const robotoBold = path.join(FONTS_DIR, 'Roboto-Bold.ttf');
+
+    if (fs.existsSync(robotoRegular) && fs.existsSync(robotoBold)) {
+        return { regular: robotoRegular, bold: robotoBold };
     }
 
-    const selected = FONT_CANDIDATES.find(
-        (pair) => fs.existsSync(pair.regular) && fs.existsSync(pair.bold)
-    );
+    // Fallback candidates
+    const CANDIDATES = [
+        { regular: '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf', bold: '/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf' },
+        { regular: '/System/Library/Fonts/Supplemental/Arial Unicode.ttf', bold: '/System/Library/Fonts/Supplemental/Arial Bold.ttf' }
+    ];
 
-    if (!selected) {
-        console.warn('[pdfService] Unicode font not found, fallback to Helvetica. Cyrillic may render incorrectly.');
-        return { regular: 'Helvetica', bold: 'Helvetica-Bold' };
-    }
+    const selected = CANDIDATES.find(pair => fs.existsSync(pair.regular) && fs.existsSync(pair.bold));
 
-    return selected;
+    if (selected) return selected;
+
+    console.warn('[pdfService] Unicode fonts not found. Using Helvetica (Cyrillic may fail).');
+    return { regular: 'Helvetica', bold: 'Helvetica-Bold' };
 };
 
 const generateEnergyReport = async (data) => {
@@ -54,49 +33,71 @@ const generateEnergyReport = async (data) => {
             const buffers = [];
             const fonts = resolveFonts();
 
+            // Register fonts if not standard
             if (fonts.regular !== 'Helvetica') {
-                doc.registerFont('SmartSphere-Regular', fonts.regular);
-                doc.registerFont('SmartSphere-Bold', fonts.bold);
+                doc.registerFont('Regular', fonts.regular);
+                doc.registerFont('Bold', fonts.bold);
             }
 
-            const regularFont = fonts.regular === 'Helvetica' ? 'Helvetica' : 'SmartSphere-Regular';
-            const boldFont = fonts.bold === 'Helvetica-Bold' ? 'Helvetica-Bold' : 'SmartSphere-Bold';
+            const fontRegular = fonts.regular === 'Helvetica' ? 'Helvetica' : 'Regular';
+            const fontBold = fonts.bold === 'Helvetica-Bold' ? 'Helvetica-Bold' : 'Bold';
 
             doc.on('data', buffers.push.bind(buffers));
             doc.on('end', () => resolve(Buffer.concat(buffers)));
 
             // Title
-            doc.font(boldFont).fontSize(20).text('Energy Report', { align: 'center' });
+            doc.font(fontBold).fontSize(20).text('Energy Report', { align: 'center' });
             doc.moveDown();
 
-            doc.fontSize(12).font(regularFont).text(`Period: ${data.periodDays} days`);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`);
+            doc.fontSize(12).font(fontRegular).text(`Period: ${data.periodDays} days`, { align: 'center' });
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, { align: 'center' });
+            doc.moveDown();
             doc.moveDown();
 
-            // Summary
-            doc.font(boldFont).text('Summary');
-            doc.font(regularFont).text(`Total Consumption: ${data.totalConsumption.toFixed(2)} kWh`);
-            doc.text(`Total Cost: ${data.totalCost} KZT`);
+            // Tariff Info
+            if (data.tariff) {
+                doc.font(fontBold).fontSize(14).text('Tariff Information');
+                doc.fontSize(12).font(fontRegular);
+                doc.text(`Provider: ${data.tariff.provider}`);
+                doc.text(`Region: ${data.tariff.city} (${data.tariff.region})`);
+                doc.moveDown();
+            }
+
+            // Consumption Summary
+            doc.font(fontBold).fontSize(14).text('Consumption Summary');
+            doc.fontSize(12).font(fontRegular);
+            doc.text(`Total Consumption: ${data.totalConsumption.toFixed(2)} kWh`);
+            doc.text(`Estimated Cost: ${data.totalCost} KZT`);
             doc.text(`Average Daily: ${data.avgDaily.toFixed(2)} kWh`);
             doc.moveDown();
 
-            // Breakdown (Mock table for now, or simple list)
-            doc.font(boldFont).text('Top Consumers');
-            data.topConsumers.forEach((device, i) => {
-                doc.font(regularFont).text(`${i + 1}. ${device.name}: ${device.kwh.toFixed(2)} kWh`);
-            });
+            // Top Consumers
+            doc.font(fontBold).fontSize(14).text('Top Consumers');
+            doc.fontSize(12).font(fontRegular);
+            if (data.topConsumers.length > 0) {
+                data.topConsumers.forEach((device, i) => {
+                    doc.text(`${i + 1}. ${device.name}: ${device.kwh.toFixed(2)} kWh`);
+                });
+            } else {
+                doc.text('No active devices recorded.');
+            }
             doc.moveDown();
 
-            // Recommendations
-            if (data.recommendations.length > 0) {
-                doc.font(boldFont).text('Recommendations');
+            // AI Recommendations
+            if (data.recommendations && data.recommendations.length > 0) {
+                doc.font(fontBold).fontSize(14).text('AI Recommendations');
+                doc.fontSize(12).font(fontRegular);
                 data.recommendations.forEach(rec => {
-                    doc.font(regularFont).text(`- ${rec.title}: Save ~${rec.estimatedKwhSaveMonth} kWh`);
+                    doc.text(`• ${rec.title}`);
+                    doc.fontSize(10).text(`  Reason: ${rec.reason}`);
+                    doc.fontSize(10).text(`  Potential Savings: ~${rec.estimatedKwhSaveMonth} kWh/month`);
+                    doc.moveDown(0.5);
+                    doc.fontSize(12);
                 });
             }
 
             doc.moveDown();
-            doc.font(regularFont).fontSize(10).text('Generated by SmartSphere AI', { align: 'center', color: 'grey' });
+            doc.fontSize(10).fillColor('grey').text('Generated by SmartSphere AI', { align: 'center' });
 
             doc.end();
         } catch (e) {

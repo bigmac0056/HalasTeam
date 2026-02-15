@@ -12,6 +12,14 @@
 
 ## [1.5.0] - 2026-02-15
 ### Added
+- **Email**: Resend API integration + robust SMTP fallback.
+- **Reports**: Accurate tariff calculation sync with Energy page.
+- **Reports**: Unicode font support (Roboto) for PDF generation.
+- **Docs**: OWNER_ACTIONS.md for production setup.
+
+### Changed
+- **UI**: Improved ReportModal UX (status messages instead of alerts).
+- **Fix**: Removed hardcoded cost fallback in backend reports.
 - **AI**: SmartSphere AI Advisor with energy saving recommendations.
 - **Reports**: Energy consumption reports with PDF download and Email support.
 - **Music**: Full music module with library, playlists, and playback.

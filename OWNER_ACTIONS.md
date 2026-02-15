@@ -1,43 +1,59 @@
-# Owner Actions Required
+# Owner Actions Manual
 
-To finalize the deployment and handover, please perform the following actions:
+This guide describes how to configure and manage the SmartSphere Report & Email system in production (Render).
 
-## 1. Accounts & Hosting
-- [ ] Create a **PostgreSQL Database** (Recommended: Neon.tech (Free Tier) or Supabase).
-- [ ] Record the **DATABASE_URL** (connection string).
-- [ ] Record the **Backend URL** (e.g., `https://smartsphere-api.onrender.com`).
-- [ ] Record the **Frontend URL** (e.g., `https://smartsphere.vercel.app`).
+## 1. Environment Variables (Required)
 
-## 2. Google Cloud Console
-- [ ] Go to your Google Cloud Console project.
-- [ ] Update **Authorized redirect URIs** to include:
-  - `<Backend URL>/oauth/google/callback`
-- [ ] Update **Authorized JavaScript origins** to include:
-  - `<Frontend URL>`
+You must set these variables in your Render Dashboard -> Environment.
 
-## 3. Environment Variables (Backend)
-Update your backend hosting environment variables:
-- [ ] `DATABASE_URL`: Set to your Postgres connection string (e.g. `postgres://...`).
-- [ ] `ALLOWED_ORIGINS`: Set to `<Frontend URL>` (e.g., `https://smartsphere.vercel.app`).
-- [ ] `FRONTEND_URL`: Set to `<Frontend URL>`.
-- [ ] `GOOGLE_CALLBACK_URL`: Set to `<Backend URL>/oauth/google/callback`.
+### Option A: Resend (Recommended)
+Best for reliability and ease of use.
 
-## 4. Environment Variables (Frontend)
-Update your frontend hosting (Vercel) environment variables:
-- [ ] `VITE_API_BASE_URL`: Set to `<Backend URL>` (no trailing slash).
-- [ ] Redeploy frontend to apply changes.
+| Variable | Value Example | Description |
+|----------|---------------|-------------|
+| `MAIL_TRANSPORT` | `resend` | Enables Resend mode |
+| `RESEND_API_KEY` | `re_123456789` | Your API Key from [resend.com](https://resend.com) |
+| `MAIL_FROM` | `SmartSphere <onboarding@resend.dev>` | Verified sender (or test sender) |
 
-## 5. Final Verification
-- [ ] Open the Frontend URL.
-- [ ] Log in via Google (checks OAuth & CORS).
-- [ ] Go to Dashboard -> Add Device -> Add a Sensor.
-- [ ] Go to Automation Logs -> Click "Clear Logs" (DELETE endpoint check).
+---
 
-## Need Help?
-If "Login with Google" fails with a 400 error, check the **Authorized redirect URIs** in Google Console.
+### Option B: Gmail SMTP (Fallback)
+Use if you don't have Resend. Requires Google App Password.
 
-## 6. Troubleshooting
-- **Error P1001 (Connection Refused):** Check if `DATABASE_URL` is correct and the database is active.
-- **Error P1000 (Auth Failed):** Check database username/password in `DATABASE_URL`.
-- **Error P2021 (Table not found):** Ensure the start command includes `npx prisma db push`.
+| Variable | Value Example | Description |
+|----------|---------------|-------------|
+| `MAIL_TRANSPORT` | `smtp` | Enables SMTP mode |
+| `MAIL_PROVIDER` | `gmail` | Provider service name |
+| `MAIL_USER` | `your.email@gmail.com` | Your Gmail address |
+| `MAIL_APP_PASSWORD` | `abcd efgh ijkl mnop` | Top-secret App Password (NOT your login password) |
+| `MAIL_FROM` | `SmartSphere <your.email@gmail.com>` | Sender address |
 
+To generate App Password:
+1. Go to Google Account -> Security.
+2. Enable 2-Step Verification.
+3. Search for "App Passwords".
+4. Create new, name it "SmartSphere".
+5. Copy the 16-character code.
+
+## 2. Testing Email
+
+1. Open your deployed app.
+2. Go to **Energy** page.
+3. Click the **"Отчет" (Report)** button.
+4. In the modal, enter your email address.
+5. Click **"Отправить"**.
+6. **Success**: You should see a green success message and receive an email with PDF.
+7. **Failure**: You will see a red error message. Check Render Logs for details (`MAIL_AUTH_FAILED` etc.).
+
+## 3. Troubleshooting
+
+**"Error: MAIL_NOT_CONFIGURED"**
+- Check if `MAIL_TRANSPORT` is set.
+- If Resend, check `RESEND_API_KEY`.
+- If SMTP, check `MAIL_USER` and `MAIL_APP_PASSWORD`.
+
+**"Error: MAIL_AUTH_FAILED"**
+- (SMTP) Double check your App Password. It changes if you change your Google password.
+
+**"Error: region not identified" in cost**
+- Ensure you have selected a valid city in the Energy page or allowed Geolocation.

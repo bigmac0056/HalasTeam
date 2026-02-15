@@ -64,5 +64,17 @@ S3_FORCE_PATH_STYLE="false"
   - `ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:5173`
   - `DATABASE_URL=postgres://...`
   - `JWT_SECRET=...`
+  ### Email Configuration (New)
+  **Option A: Resend (Best)**
+  - `MAIL_TRANSPORT=resend`
+  - `RESEND_API_KEY=re_123...`
+  - `MAIL_FROM=SmartSphere <onboarding@resend.dev>`
+
+  **Option B: SMTP (Fallback)**
+  - `MAIL_TRANSPORT=smtp`
+  - `MAIL_PROVIDER=gmail`
+  - `MAIL_USER=your@gmail.com`
+  - `MAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx`
+
 - Set on Vercel (frontend):
   - `VITE_API_BASE_URL=https://your-backend.onrender.com`

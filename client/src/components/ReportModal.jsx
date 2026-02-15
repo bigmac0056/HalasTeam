@@ -2,23 +2,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import API from '../api/api';
 
-export default function ReportModal({ isOpen, onClose, periodDays }) {
+export default function ReportModal({ isOpen, onClose, periodDays, coords, stoveType, peopleCount }) {
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState('');
     const [sending, setSending] = useState(false);
+    const [sendStatus, setSendStatus] = useState(null);
 
     const fetchPreview = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await API.get('/reports/energy/preview', { params: { periodDays } });
+            const res = await API.get('/reports/energy/preview', {
+                params: {
+                    periodDays,
+                    lat: coords?.lat,
+                    lon: coords?.lon,
+                    stoveType,
+                    peopleCount
+                }
+            });
             setReport(res.data);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [periodDays]);
+    }, [periodDays, coords?.lat, coords?.lon, stoveType, peopleCount]);
 
     useEffect(() => {
         if (isOpen) {
@@ -29,7 +38,13 @@ export default function ReportModal({ isOpen, onClose, periodDays }) {
     const downloadPdf = async () => {
         try {
             const res = await API.get('/reports/energy/pdf', {
-                params: { periodDays },
+                params: {
+                    periodDays,
+                    lat: coords?.lat,
+                    lon: coords?.lon,
+                    stoveType,
+                    peopleCount
+                },
                 responseType: 'blob'
             });
             const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -45,13 +60,29 @@ export default function ReportModal({ isOpen, onClose, periodDays }) {
     };
 
     const sendEmail = async () => {
+        if (!email || !email.includes('@')) {
+            setSendStatus({ type: 'error', message: 'Введите корректный Email' });
+            return;
+        }
+
         setSending(true);
+        setSendStatus(null);
+
         try {
-            await API.post('/reports/energy/email', { periodDays, email });
-            alert('Отчет отправлен!');
+            await API.post('/reports/energy/email', {
+                periodDays,
+                email,
+                lat: coords?.lat,
+                lon: coords?.lon,
+                stoveType,
+                peopleCount
+            });
+            setSendStatus({ type: 'success', message: 'Отчет успешно отправлен!' });
             setEmail('');
+            setTimeout(() => setSendStatus(null), 3000);
         } catch (e) {
-            alert('Ошибка отправки: ' + (e.response?.data?.error || e.message));
+            const msg = e.response?.data?.error || e.message;
+            setSendStatus({ type: 'error', message: 'Ошибка отправки: ' + msg });
         } finally {
             setSending(false);
         }
@@ -82,6 +113,17 @@ export default function ReportModal({ isOpen, onClose, periodDays }) {
                         </div>
                     ) : report ? (
                         <div className="space-y-8">
+                            {/* Tariff Metadata */}
+                            {report.tariff && (
+                                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-xl flex items-start gap-3">
+                                    <span className="material-icons-round text-blue-500 mt-1">info</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-900 dark:text-white">Тариф: {report.tariff.city}</p>
+                                        <p className="text-xs text-slate-500">{report.tariff.provider}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Summary Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl">
@@ -145,33 +187,50 @@ export default function ReportModal({ isOpen, onClose, periodDays }) {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col md:flex-row gap-4 items-center justify-between z-10 rounded-b-3xl">
-                    <button
-                        onClick={downloadPdf}
-                        disabled={loading || !report}
-                        className="w-full md:w-auto px-6 py-3 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl font-bold shadow-sm border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <span className="material-icons-round">file_download</span>
-                        Скачать PDF
-                    </button>
-
-                    <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
-                        <input
-                            type="email"
-                            placeholder="example@mail.com"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                        />
+                <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col gap-4 z-10 rounded-b-3xl">
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                         <button
-                            onClick={sendEmail}
-                            disabled={sending || loading || !report}
-                            className="px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-colors flex items-center justify-center gap-2"
+                            onClick={downloadPdf}
+                            disabled={loading || !report}
+                            className="w-full md:w-auto px-6 py-3 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl font-bold shadow-sm border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
                         >
-                            <span className="material-icons-round">send</span>
-                            {sending ? 'Отправка...' : 'Отправить'}
+                            <span className="material-icons-round">file_download</span>
+                            Скачать PDF
                         </button>
+
+                        <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                            <input
+                                type="email"
+                                placeholder="example@mail.com"
+                                value={email}
+                                onChange={e => {
+                                    setEmail(e.target.value);
+                                    setSendStatus(null);
+                                }}
+                                className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
+                            <button
+                                onClick={sendEmail}
+                                disabled={sending || loading || !report}
+                                className="px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="material-icons-round">send</span>
+                                {sending ? 'Отправка...' : 'Отправить'}
+                            </button>
+                        </div>
                     </div>
+
+                    {sendStatus && (
+                        <div className={`p-3 rounded-xl text-sm font-medium flex items-center gap-2 ${sendStatus.type === 'success'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                            <span className="material-icons-round text-base">
+                                {sendStatus.type === 'success' ? 'check_circle' : 'error'}
+                            </span>
+                            {sendStatus.message}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
