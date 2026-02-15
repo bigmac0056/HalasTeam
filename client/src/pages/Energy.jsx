@@ -449,7 +449,6 @@ export default function Energy() {
                     isOpen={isReportModalOpen}
                     onClose={() => setIsReportModalOpen(false)}
                     periodDays={periodDays}
-                    totalCost={tariff?.totalCost || 0}
                 />
             </main>
         </div>

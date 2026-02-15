@@ -104,6 +104,7 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
     const rawTemp = weather?.temperature ?? weather?.temp;
     const tempNum = Number(rawTemp);
     const safeTemp = Number.isFinite(tempNum) ? Math.round(tempNum) : '--';
+    const weatherCodeNum = Number(weather?.weathercode);
 
     const isDay = weather?.isDay ?? true;
     const weatherUi = weatherCodeToUi(weather?.weathercode, isDay);
@@ -122,10 +123,15 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
 
     // Status depends on critical sensors OR high unread count
     const criticalSensors = devices.filter(d => d.type === 'Sensor' && (d.value === 1 || d.isAlert));
+    const isBrightSkyTheme = isDay && (
+        !Number.isFinite(weatherCodeNum) ||
+        weatherCodeNum === 0 ||
+        CLOUD_CODES.includes(weatherCodeNum)
+    );
 
     // Status Logic: Red if critical sensors, Orange if many notifications, else Blue
     let statusText = 'Оптимальный';
-    let statusColor = 'text-blue-400';
+    let statusColor = isBrightSkyTheme ? 'text-blue-900' : 'text-blue-400';
     let cardBgClass = 'bg-blue-500/10';
 
     if (criticalSensors.length > 0) {

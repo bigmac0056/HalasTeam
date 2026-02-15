@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import API from '../api/api';
 
-export default function ReportModal({ isOpen, onClose, periodDays, totalCost }) {
+export default function ReportModal({ isOpen, onClose, periodDays }) {
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState('');
