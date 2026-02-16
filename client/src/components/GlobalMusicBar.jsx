@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMusicPlayer } from '../context/MusicPlayerContext';
 
@@ -7,6 +7,13 @@ const HIDDEN_PREFIXES = ['/login', '/register', '/oauth/callback'];
 export default function GlobalMusicBar() {
   const location = useLocation();
   const token = localStorage.getItem('token');
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('globalMusicBarCollapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const {
     playback,
     isBusy,
@@ -23,8 +30,33 @@ export default function GlobalMusicBar() {
     return HIDDEN_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
   }, [location.pathname]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('globalMusicBarCollapsed', String(collapsed));
+    } catch {
+      return;
+    }
+  }, [collapsed]);
+
   if (!token || hiddenByRoute || !playback.currentTrack) {
     return null;
+  }
+
+  if (collapsed) {
+    return (
+      <div className="fixed bottom-4 right-4 z-[90]">
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/95 dark:bg-card-dark/95 border border-slate-200 dark:border-slate-700 shadow-xl text-slate-700 dark:text-slate-200"
+          title="Развернуть плеер"
+        >
+          <span className="material-icons-round text-base">music_note</span>
+          <span className="text-sm font-semibold">Плеер</span>
+          <span className="material-icons-round text-base">keyboard_arrow_up</span>
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -83,6 +115,14 @@ export default function GlobalMusicBar() {
             title="Следующий"
           >
             <span className="material-icons-round">skip_next</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+            title="Свернуть плеер"
+          >
+            <span className="material-icons-round">keyboard_arrow_down</span>
           </button>
         </div>
       </div>

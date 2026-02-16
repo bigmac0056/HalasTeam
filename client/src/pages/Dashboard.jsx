@@ -627,7 +627,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-1">Подсказка для демонстрации (1 минута)</p>
                 <p className="text-xs text-indigo-700/80 dark:text-indigo-300/90">
-                  1) Нажми <span className="font-semibold">Я ушел</span> → 2) покажи запись в Activity Log → 3) открой Энергопотребление и блок Советы ИИ.
+                  1) Нажми <span className="font-semibold">Ушел</span> → 2) покажи запись в Activity Log → 3) открой Энергопотребление и блок Советы ИИ.
                 </p>
               </div>
               <button
@@ -657,30 +657,6 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => updateHomeMode('Away')}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition-colors"
-                  title='Быстрый режим: Ушел из дома'
-                >
-                  Я ушел
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateHomeMode('Night')}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
-                  title='Быстрый режим: Ночь'
-                >
-                  Ночь
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateHomeMode('Away')}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-colors"
-                  title='Быстро отключить активные устройства'
-                >
-                  Выключить всё
-                </button>
               </div>
               <button
                 onClick={() => setShowAddDevice(true)}
