@@ -58,13 +58,11 @@ export default function Automation() {
             return;
         }
         const loadData = async () => {
-            await fetchDevices();
-            await fetchRules();
-            await fetchLogs();
+            await Promise.all([fetchDevices(), fetchRules(), fetchLogs()]);
         };
         loadData();
 
-        const interval = setInterval(fetchLogs, 15000);
+        const interval = setInterval(loadData, 5000);
         return () => clearInterval(interval);
     }, [navigate, fetchDevices, fetchLogs, fetchRules]);
 

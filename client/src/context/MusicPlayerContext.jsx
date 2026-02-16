@@ -57,6 +57,7 @@ export function MusicPlayerProvider({ children }) {
   const audioRef = useRef(null);
   const syncTimerRef = useRef(null);
   const seekSyncRef = useRef({ lastSentAt: 0 });
+  const blockedAutoplayRef = useRef(false);
 
   if (!audioRef.current && typeof Audio !== 'undefined') {
     audioRef.current = new Audio();
@@ -115,10 +116,15 @@ export function MusicPlayerProvider({ children }) {
     }
 
     if (next.isPlaying || options.forcePlay) {
+      if (blockedAutoplayRef.current && !options.forcePlay) {
+        return next;
+      }
       try {
         await audio.play();
+        blockedAutoplayRef.current = false;
       } catch (error) {
         console.error('Audio play failed:', error);
+        blockedAutoplayRef.current = true;
         setPlayback((prev) => ({
           ...prev,
           isPlaying: false,
@@ -127,6 +133,7 @@ export function MusicPlayerProvider({ children }) {
       }
     } else {
       audio.pause();
+      blockedAutoplayRef.current = false;
     }
 
     return next;
@@ -321,6 +328,25 @@ export function MusicPlayerProvider({ children }) {
       if (syncTimerRef.current) clearInterval(syncTimerRef.current);
     };
   }, [syncFromBackend]);
+
+  useEffect(() => {
+    const resumeBlockedAutoplay = () => {
+      if (!blockedAutoplayRef.current) return;
+      blockedAutoplayRef.current = false;
+      void runAction(() => API.post('/music/playback/play'), {
+        requireSpeaker: true,
+        forcePlay: true,
+        fallbackError: 'Не удалось возобновить воспроизведение'
+      });
+    };
+
+    window.addEventListener('pointerdown', resumeBlockedAutoplay, true);
+    window.addEventListener('keydown', resumeBlockedAutoplay, true);
+    return () => {
+      window.removeEventListener('pointerdown', resumeBlockedAutoplay, true);
+      window.removeEventListener('keydown', resumeBlockedAutoplay, true);
+    };
+  }, [runAction]);
 
   const value = useMemo(() => ({
     playback,

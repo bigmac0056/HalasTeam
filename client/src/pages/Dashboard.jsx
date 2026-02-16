@@ -389,7 +389,8 @@ export default function Dashboard() {
     const interval = setInterval(() => {
       fetchDevices();
       fetchNotifications();
-    }, 10000);
+      fetchAutomationLogs();
+    }, 5000);
     const healthInterval = setInterval(() => {
       checkApiHealth();
     }, 30000);
