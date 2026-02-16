@@ -38,7 +38,7 @@ const generateRecommendations = async (userId) => {
     }
 
 
-    const heaters = user.devices.filter(d => d.type === 'Heater' && d.status && d.value > 24);
+    const heaters = user.devices.filter(d => d.type === 'Heater' && d.status && Number(d.value) >= 25);
     if (heaters.length > 0) {
         recommendations.push({
             title: 'Оптимизировать обогреватель',
@@ -48,6 +48,21 @@ const generateRecommendations = async (userId) => {
             estimatedKwhSaveMonth: 2 * 30,
             estimatedKztSaveMonth: 2 * 30 * 25,
             comfortRisk: 'medium',
+            autoApplicable: false,
+            priority: 4
+        });
+    }
+
+    const overcooledAc = user.devices.filter(d => d.type === 'AC' && d.status && Number(d.value) <= 20);
+    if (overcooledAc.length > 0) {
+        recommendations.push({
+            title: 'Оптимизировать кондиционер',
+            reason: 'Температура кондиционера установлена слишком низко. Повышение цели до 23–24°C снижает расход энергии.',
+            actionType: 'SET_TEMP',
+            targetDeviceId: overcooledAc[0].id,
+            estimatedKwhSaveMonth: 6 * 30,
+            estimatedKztSaveMonth: 6 * 30 * 25,
+            comfortRisk: 'low',
             autoApplicable: false,
             priority: 4
         });
@@ -170,12 +185,15 @@ const applyRecommendation = async (userId, recId) => {
 
         if (device) {
             const currentValue = Number(device.value || 24);
-            const nextValue = Math.max(18, currentValue - 1);
+            let nextValue = currentValue;
+            if (device.type === 'Heater') nextValue = Math.max(18, currentValue - 1);
+            else if (device.type === 'AC') nextValue = Math.min(30, currentValue + 1);
+            else nextValue = Math.max(18, currentValue - 1);
             await prisma.device.update({
                 where: { id: device.id },
                 data: { value: nextValue }
             });
-            logDetails = `Lowered temperature for ${device.name} to ${nextValue}°C`;
+            logDetails = `Adjusted temperature for ${device.name} to ${nextValue}°C`;
             targetDeviceId = device.id;
         } else {
             status = 'FAILED';

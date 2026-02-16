@@ -315,6 +315,24 @@ export default function Dashboard() {
     }, 300);
   };
 
+  const updateHvacTarget = async (device, nextValue) => {
+    if (!device?.id) return;
+    const clamped = Math.max(16, Math.min(30, Number(nextValue)));
+    if (!Number.isFinite(clamped)) return;
+
+    setDevices((prev) =>
+      prev.map((item) => (item.id === device.id ? { ...item, value: clamped } : item))
+    );
+
+    try {
+      await API.put(`/devices/${device.id}/value`, { value: clamped, unit: '°C' });
+      await Promise.all([fetchDevices(), fetchAiRecommendations(), fetchAiStatus()]);
+    } catch (error) {
+      console.error('Error updating HVAC target:', error);
+      fetchDevices();
+    }
+  };
+
   const updateHomeMode = async (mode) => {
     try {
       await API.post('/settings/mode', { mode });
@@ -537,7 +555,10 @@ export default function Dashboard() {
           name={device.name}
           room={device.room}
           status={device.status}
+          type={device.type}
+          value={device.value}
           onToggle={() => toggleDevice(device.id)}
+          onChange={(nextTemp) => updateHvacTarget(device, nextTemp)}
           onDelete={() => requestDeleteDevice(device.id, device.name)}
         />
       );
