@@ -96,15 +96,15 @@ export default function Energy() {
     const [coords, setCoords] = useState(null);
     const [locationStatus, setLocationStatus] = useState('locating');
 
-    const fetchAiRecommendations = useCallback(async () => {
-        setIsAiLoading(true);
+    const fetchAiRecommendations = useCallback(async ({ silent = false } = {}) => {
+        if (!silent) setIsAiLoading(true);
         try {
             const res = await API.get('/ai/recommendations');
             setAiRecommendations(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error('Failed to load AI recommendations:', error);
         } finally {
-            setIsAiLoading(false);
+            if (!silent) setIsAiLoading(false);
         }
     }, []);
 
@@ -127,11 +127,13 @@ export default function Energy() {
 
     const handleApplyAiRecommendation = async (id) => {
         setAiBusyId(id);
+        setAiRecommendations((prev) => prev.filter((rec) => rec.id !== id));
         try {
             await API.post(`/ai/recommendations/${id}/apply`);
-            await Promise.all([fetchAiRecommendations(), fetchAiStatus(), fetchData()]);
+            await Promise.all([fetchAiRecommendations({ silent: true }), fetchAiStatus(), fetchData()]);
         } catch (error) {
             console.error('Failed to apply recommendation:', error);
+            await fetchAiRecommendations({ silent: true });
         } finally {
             setAiBusyId(null);
         }
@@ -139,11 +141,13 @@ export default function Energy() {
 
     const handleDismissAiRecommendation = async (id) => {
         setAiBusyId(id);
+        setAiRecommendations((prev) => prev.filter((rec) => rec.id !== id));
         try {
             await API.post(`/ai/recommendations/${id}/dismiss`);
-            await Promise.all([fetchAiRecommendations(), fetchAiStatus()]);
+            await Promise.all([fetchAiRecommendations({ silent: true }), fetchAiStatus()]);
         } catch (error) {
             console.error('Failed to dismiss recommendation:', error);
+            await fetchAiRecommendations({ silent: true });
         } finally {
             setAiBusyId(null);
         }

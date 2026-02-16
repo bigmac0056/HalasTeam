@@ -18,12 +18,14 @@ const SmartSphereAI = ({
   onRefreshRecommendations,
   onApplyRecommendation,
   onDismissRecommendation,
+  onClearActions,
   actions = [],
   aiStatus = DEFAULT_AI_STATUS
 }) => {
   const [isScenarioOpen, setIsScenarioOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [busyRecId, setBusyRecId] = useState(null);
+  const [isClearingActions, setIsClearingActions] = useState(false);
 
   const handleScenarioClick = (value) => {
     if (onScenarioSelect) onScenarioSelect(value);
@@ -57,6 +59,16 @@ const SmartSphereAI = ({
       await onDismissRecommendation(id);
     } finally {
       setBusyRecId(null);
+    }
+  };
+
+  const handleClearActions = async () => {
+    if (!onClearActions) return;
+    setIsClearingActions(true);
+    try {
+      await onClearActions();
+    } finally {
+      setIsClearingActions(false);
     }
   };
 
@@ -210,7 +222,17 @@ const SmartSphereAI = ({
       </div>
 
       <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-4">
-        <p className="text-xs uppercase tracking-wide font-bold text-slate-400 mb-2">Действия ИИ</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs uppercase tracking-wide font-bold text-slate-400">Действия ИИ</p>
+          <button
+            type="button"
+            onClick={handleClearActions}
+            disabled={isClearingActions || actions.length === 0}
+            className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-50"
+          >
+            {isClearingActions ? 'Очистка...' : 'Очистить'}
+          </button>
+        </div>
         <div className="space-y-2 max-h-36 overflow-auto pr-1">
           {actions.length === 0 ? (
             <div className="text-xs text-slate-400">Пока нет примененных действий</div>

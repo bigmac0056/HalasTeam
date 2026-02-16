@@ -24,6 +24,15 @@ router.get('/actions', async (req, res) => {
     }
 });
 
+router.delete('/actions', async (req, res) => {
+    try {
+        const result = await aiService.clearActionLogs(req.user.id);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.get('/status', async (req, res) => {
     try {
         const lookbackDays = parseInt(req.query.lookbackDays, 10) || 30;

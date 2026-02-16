@@ -1,14 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const HVACCard = ({ name, room, status, value, type, onToggle, onChange = () => {}, onDelete }) => {
     const isAC = type === 'AC';
+    const MIN_TEMP = 16;
+    const MAX_TEMP = 30;
     const currentValue = Number.isFinite(Number(value)) ? Number(value) : 24;
+    const [draftValue, setDraftValue] = useState(String(currentValue));
     const modeLabel = isAC ? 'Охлаждение' : 'Обогрев';
+    const ecoRangeLabel = isAC ? 'Эко-диапазон: 23-24°C' : 'Эко-диапазон: 21-22°C';
     const icon = isAC ? 'ac_unit' : 'local_fire_department';
     const iconClass = isAC
         ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
         : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400';
     const activeBorder = isAC ? 'border-blue-300/40 shadow-blue-500/10' : 'border-orange-300/40 shadow-orange-500/10';
+
+    useEffect(() => {
+        setDraftValue(String(currentValue));
+    }, [currentValue]);
+
+    const commitDraftValue = () => {
+        const parsed = Number(String(draftValue).replace(',', '.'));
+        if (!Number.isFinite(parsed)) {
+            setDraftValue(String(currentValue));
+            return;
+        }
+        const clamped = Math.max(MIN_TEMP, Math.min(MAX_TEMP, Math.round(parsed)));
+        setDraftValue(String(clamped));
+        if (clamped !== currentValue) {
+            onChange(clamped);
+        }
+    };
 
     return (
         <div className={`relative group bg-white dark:bg-card-dark rounded-3xl p-6 border transition-all hover:shadow-xl ${status ? activeBorder : 'border-slate-100 dark:border-slate-800 shadow-sm'}`}>
@@ -39,12 +60,30 @@ const HVACCard = ({ name, room, status, value, type, onToggle, onChange = () => 
             <div className="mb-6">
                 <h4 className="font-bold text-slate-900 dark:text-white leading-tight">{name}</h4>
                 <p className="text-xs text-slate-400 mt-1">{room} • {modeLabel}</p>
+                <p className="text-[11px] text-slate-400 mt-1">{ecoRangeLabel}</p>
             </div>
 
             <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                    <span className="text-3xl font-black text-slate-900 dark:text-white">{currentValue}°C</span>
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Целевая Темп.</span>
+                    <div className="flex items-end gap-2">
+                        <input
+                            type="number"
+                            min={MIN_TEMP}
+                            max={MAX_TEMP}
+                            value={draftValue}
+                            onChange={(e) => setDraftValue(e.target.value)}
+                            onBlur={commitDraftValue}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    commitDraftValue();
+                                }
+                            }}
+                            className="w-20 bg-transparent text-3xl font-black text-slate-900 dark:text-white leading-none focus:outline-none"
+                        />
+                        <span className="text-3xl font-black text-slate-900 dark:text-white">°C</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Целевая Темп. (16-30)</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <button

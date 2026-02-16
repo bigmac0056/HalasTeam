@@ -224,15 +224,15 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAiRecommendations = async () => {
-    setIsAiLoading(true);
+  const fetchAiRecommendations = async ({ silent = false } = {}) => {
+    if (!silent) setIsAiLoading(true);
     try {
       const res = await API.get('/ai/recommendations');
       setAiRecommendations(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error('Error fetching AI recommendations:', error);
     } finally {
-      setIsAiLoading(false);
+      if (!silent) setIsAiLoading(false);
     }
   };
 
@@ -260,20 +260,40 @@ export default function Dashboard() {
   };
 
   const applyAiRecommendation = async (id) => {
+    setAiRecommendations((prev) => prev.filter((rec) => rec.id !== id));
     try {
       await API.post(`/ai/recommendations/${id}/apply`);
-      await Promise.all([fetchAiRecommendations(), fetchAiActions(), fetchAiStatus(), fetchDevices(), fetchAutomationLogs()]);
+      await Promise.all([
+        fetchAiRecommendations({ silent: true }),
+        fetchAiActions(),
+        fetchAiStatus(),
+        fetchDevices(),
+        fetchAutomationLogs()
+      ]);
     } catch (error) {
       console.error('Error applying AI recommendation:', error);
+      await fetchAiRecommendations({ silent: true });
     }
   };
 
   const dismissAiRecommendation = async (id) => {
+    setAiRecommendations((prev) => prev.filter((rec) => rec.id !== id));
     try {
       await API.post(`/ai/recommendations/${id}/dismiss`);
-      await Promise.all([fetchAiRecommendations(), fetchAiStatus()]);
+      await Promise.all([fetchAiRecommendations({ silent: true }), fetchAiStatus()]);
     } catch (error) {
       console.error('Error dismissing AI recommendation:', error);
+      await fetchAiRecommendations({ silent: true });
+    }
+  };
+
+  const clearAiActions = async () => {
+    try {
+      await API.delete('/ai/actions');
+      setAiActions([]);
+      await fetchAiStatus();
+    } catch (error) {
+      console.error('Error clearing AI actions:', error);
     }
   };
 
@@ -326,7 +346,7 @@ export default function Dashboard() {
 
     try {
       await API.put(`/devices/${device.id}/value`, { value: clamped, unit: '°C' });
-      await Promise.all([fetchDevices(), fetchAiRecommendations(), fetchAiStatus()]);
+      await Promise.all([fetchDevices(), fetchAiRecommendations({ silent: true }), fetchAiStatus()]);
     } catch (error) {
       console.error('Error updating HVAC target:', error);
       fetchDevices();
@@ -727,6 +747,7 @@ export default function Dashboard() {
               onRefreshRecommendations={fetchAiRecommendations}
               onApplyRecommendation={applyAiRecommendation}
               onDismissRecommendation={dismissAiRecommendation}
+              onClearActions={clearAiActions}
               actions={aiActions}
               aiStatus={aiStatus}
             />

@@ -1,5 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const HVAC_MIN_TEMP = 16;
+const HVAC_MAX_TEMP = 30;
+const HVAC_AI_TARGETS = {
+    Heater: 22,
+    AC: 24
+};
+
+const clampHvacTarget = (value) => Math.max(HVAC_MIN_TEMP, Math.min(HVAC_MAX_TEMP, Number(value)));
 
 const generateRecommendations = async (userId) => {
 
@@ -42,7 +50,7 @@ const generateRecommendations = async (userId) => {
     if (heaters.length > 0) {
         recommendations.push({
             title: 'Оптимизировать обогреватель',
-            reason: 'Температура обогревателя установлена выше 24°C. Снижение на 1°C экономит до 7% энергии.',
+            reason: 'Температура обогревателя выше энергоэффективного диапазона. Рекомендуем установить 22°C.',
             actionType: 'SET_TEMP',
             targetDeviceId: heaters[0].id,
             estimatedKwhSaveMonth: 2 * 30,
@@ -57,7 +65,7 @@ const generateRecommendations = async (userId) => {
     if (overcooledAc.length > 0) {
         recommendations.push({
             title: 'Оптимизировать кондиционер',
-            reason: 'Температура кондиционера установлена слишком низко. Повышение цели до 23–24°C снижает расход энергии.',
+            reason: 'Температура кондиционера слишком низкая. Рекомендуем установить 24°C для снижения расхода.',
             actionType: 'SET_TEMP',
             targetDeviceId: overcooledAc[0].id,
             estimatedKwhSaveMonth: 6 * 30,
@@ -185,10 +193,10 @@ const applyRecommendation = async (userId, recId) => {
 
         if (device) {
             const currentValue = Number(device.value || 24);
-            let nextValue = currentValue;
-            if (device.type === 'Heater') nextValue = Math.max(18, currentValue - 1);
-            else if (device.type === 'AC') nextValue = Math.min(30, currentValue + 1);
-            else nextValue = Math.max(18, currentValue - 1);
+            const recommendedTarget = HVAC_AI_TARGETS[device.type];
+            const nextValue = Number.isFinite(Number(recommendedTarget))
+                ? clampHvacTarget(recommendedTarget)
+                : clampHvacTarget(currentValue);
             await prisma.device.update({
                 where: { id: device.id },
                 data: { value: nextValue }
@@ -240,6 +248,16 @@ const getActionLogs = async (userId, limit = 10) => {
     });
 };
 
+const clearActionLogs = async (userId) => {
+    const result = await prisma.aiActionLog.deleteMany({
+        where: { userId }
+    });
+    return {
+        success: true,
+        deleted: result.count
+    };
+};
+
 const getRecommendationsStatus = async (userId, lookbackDays = 30) => {
     const safeLookbackDays = Math.min(Math.max(Number(lookbackDays) || 30, 1), 365);
     const since = new Date(Date.now() - safeLookbackDays * 24 * 60 * 60 * 1000);
@@ -288,5 +306,6 @@ module.exports = {
     applyRecommendation,
     dismissRecommendation,
     getActionLogs,
+    clearActionLogs,
     getRecommendationsStatus
 };

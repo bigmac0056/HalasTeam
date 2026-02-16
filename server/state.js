@@ -38,7 +38,13 @@ const addDevice = async (device) => {
 };
 
 const getAllDevices = async (userId) => {
-  return await prisma.device.findMany({ where: { userId } });
+  return await prisma.device.findMany({
+    where: { userId },
+    orderBy: [
+      { createdAt: 'asc' },
+      { id: 'asc' }
+    ]
+  });
 };
 
 const findDeviceById = async (id, userId) => {
