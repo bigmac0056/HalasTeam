@@ -53,7 +53,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300 relative">
-      {/* Header Overlay */}
       <div className="absolute top-0 left-0 right-0 p-8 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center">
@@ -80,7 +79,6 @@ export default function Login() {
 
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="bg-white dark:bg-card-dark p-8 rounded-3xl shadow-soft-dark border border-slate-200 dark:border-slate-700 w-full max-w-md relative overflow-hidden">
-          {/* Blue top border like in screenshot */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-400 to-blue-600"></div>
 
           <div className="text-center mb-8 mt-4">

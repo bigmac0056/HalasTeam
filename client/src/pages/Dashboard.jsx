@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import API from '../api/api';
 
-// Premium Components
+
 import HeroCard from '../components/Dashboard/HeroCard';
 import SmartSphereAI from '../components/SmartSphereAI';
 import MusicCard from '../components/Dashboard/MusicCard';
@@ -55,7 +55,7 @@ const persistCoords = (lat, lon) => {
   try {
     localStorage.setItem(LAST_KNOWN_COORDS_KEY, JSON.stringify({ lat, lon, savedAt: new Date().toISOString() }));
   } catch {
-    // Ignore storage errors.
+    return;
   }
 };
 
@@ -139,11 +139,11 @@ export default function Dashboard() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
 
-  // Add device form state
+
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
   const [type, setType] = useState('');
-  const [sensorType, setSensorType] = useState(''); // New state for sensor subtype
+  const [sensorType, setSensorType] = useState('');
   const [source, setSource] = useState('');
 
   const navigate = useNavigate();
@@ -501,7 +501,7 @@ export default function Dashboard() {
     try {
       localStorage.setItem(JUDGE_HINT_DISMISSED_KEY, 'true');
     } catch {
-      // ignore
+      return;
     }
   };
 
@@ -564,7 +564,7 @@ export default function Dashboard() {
       );
     }
 
-    // Default Generic Card for Light/Socket/etc.
+
     return (
       <div
         key={device.id}
@@ -641,10 +641,8 @@ export default function Dashboard() {
         )}
         <div className="flex flex-col lg:flex-row gap-10">
 
-          {/* Main Dashboard Area */}
           <div className="flex-1 space-y-12">
 
-            {/* Top Navigation / Mode Switcher */}
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex bg-white dark:bg-card-dark p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
@@ -692,10 +690,8 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Hero Section */}
             <HeroCard weather={weather} devices={devices} notifications={notifications} />
 
-            {/* Room Filter Footer style */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Active Devices</h2>
@@ -712,14 +708,12 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Devices Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-10">
                 {filteredDevices.map(renderDeviceCard)}
               </div>
             </div>
           </div>
 
-          {/* Sidebar Area */}
           <aside className="w-full lg:w-80 space-y-8">
             <SmartSphereAI
               autoPilot={autoPilotEnabled}
@@ -739,7 +733,6 @@ export default function Dashboard() {
               aiStatus={aiStatus}
             />
 
-            {/* Automation Logs Sidebar version */}
             <div className="bg-white dark:bg-card-dark rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm transition-all h-fit">
               <h3 className="font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                 <span className="material-icons-round text-primary">history</span>
@@ -819,7 +812,6 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Add Device Modal - unchanged logic but styled slightly more premium */}
       {showAddDevice && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-card-dark rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-white/10 animate-fade-in-up">

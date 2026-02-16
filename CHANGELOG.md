@@ -25,6 +25,7 @@
 - **Dashboard (P2)**: Added Activity Log filter chips (`Все / Тревоги / Автоматика / Ручные`) with colored indicators.
 - **Dashboard (P2)**: Added reliability mini-block (`API status`, `last sync`, `geolocation fallback`).
 - **Dashboard (P2)**: Added dismissible 1-minute onboarding hint for judges.
+- **Automation UX**: Added `Одноразовое правило` option for time-based rules; after first successful trigger, rule auto-disables and writes a completion log.
 
 ## [1.5.0] - 2026-02-15
 ### Added

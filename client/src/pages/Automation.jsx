@@ -12,6 +12,7 @@ export default function Automation() {
         name: '',
         triggerType: 'time',
         triggerTime: '',
+        triggerOnce: false,
         triggerOperator: '<',
         triggerValue: 20,
         actionDeviceId: '',
@@ -100,17 +101,17 @@ export default function Automation() {
         }
     };
 
-    // Parse trigger/action JSON for display (ROBUST VERSION)
+
     const parseTrigger = (triggerStr) => {
         try {
-            // If it's already an object, return it
+
             if (typeof triggerStr === 'object') return triggerStr;
 
-            // Try to parse JSON
+
             return JSON.parse(triggerStr);
         } catch (e) {
             console.error(e);
-            // Fallback for simple strings (legacy data)
+
             return { type: 'time', value: triggerStr || '00:00' };
         }
     };
@@ -137,17 +138,18 @@ export default function Automation() {
     const handleAddRule = async (e) => {
         e.preventDefault();
 
-        // Construct standard Trigger object
+
         const trigger = {
-            type: newRule.triggerType, // 'time' | 'temperature' | 'sensor'
+            type: newRule.triggerType,
             value: newRule.triggerType === 'time' ? newRule.triggerTime : parseFloat(newRule.triggerValue),
-            operator: newRule.triggerOperator
+            operator: newRule.triggerOperator,
+            once: newRule.triggerType === 'time' ? Boolean(newRule.triggerOnce) : false
         };
 
-        // Construct standard Action object
+
         const action = {
             deviceId: newRule.actionDeviceId,
-            status: newRule.actionStatus // true = ON, false = OFF
+            status: newRule.actionStatus
         };
 
         const icon = newRule.triggerType === 'time' ? 'schedule' : 'thermostat';
@@ -163,7 +165,7 @@ export default function Automation() {
             fetchLogs();
             setShowAddRule(false);
             setNewRule({
-                name: '', triggerType: 'time', triggerTime: '', triggerOperator: '<',
+                name: '', triggerType: 'time', triggerTime: '', triggerOnce: false, triggerOperator: '<',
                 triggerValue: 20, actionDeviceId: '', actionStatus: true, icon: 'schedule'
             });
         } catch (error) {
@@ -190,7 +192,6 @@ export default function Automation() {
                     </button>
                 </div>
 
-                {/* Automation Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700/50">
                         <div className="flex items-center justify-between mb-4">
@@ -225,7 +226,6 @@ export default function Automation() {
                     </div>
                 </div>
 
-                {/* Rules List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {automationRules.map((rule) => {
                         const trigger = parseTrigger(rule.trigger);
@@ -251,6 +251,11 @@ export default function Automation() {
                                             <div className="flex items-center gap-2 text-sm text-text-muted-light dark:text-text-muted-dark">
                                                 <span className={`inline-block w-2 h-2 rounded-full ${rule.enabled ? 'bg-green-500' : 'bg-slate-300'}`}></span>
                                                 {rule.enabled ? 'Активно' : 'На паузе'}
+                                                {trigger?.once === true && (
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                                        Одноразовое
+                                                    </span>
+                                                )}
                                                 {rule.lastTriggeredAt && (
                                                     <span className="ml-2 text-xs opacity-70 border-l pl-2 border-slate-300 dark:border-slate-700">
                                                         Сраб.: {new Date(rule.lastTriggeredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -326,7 +331,6 @@ export default function Automation() {
                 </div>
             </main>
 
-            {/* Add Rule Modal */}
             {showAddRule && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-8 max-w-md w-full shadow-2xl animate-fade-in-up">
@@ -380,13 +384,24 @@ export default function Automation() {
                                 </div>
 
                                 {newRule.triggerType === 'time' ? (
-                                    <input
-                                        type="time"
-                                        value={newRule.triggerTime}
-                                        onChange={(e) => setNewRule({ ...newRule, triggerTime: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark outline-none focus:border-primary"
-                                        required
-                                    />
+                                    <>
+                                        <input
+                                            type="time"
+                                            value={newRule.triggerTime}
+                                            onChange={(e) => setNewRule({ ...newRule, triggerTime: e.target.value })}
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark outline-none focus:border-primary"
+                                            required
+                                        />
+                                        <label className="flex items-center gap-2 text-sm text-text-main-light dark:text-text-main-dark cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={newRule.triggerOnce}
+                                                onChange={(e) => setNewRule({ ...newRule, triggerOnce: e.target.checked })}
+                                                className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                            />
+                                            Одноразовое правило (после срабатывания отключить)
+                                        </label>
+                                    </>
                                 ) : (
                                     <div className="flex gap-3">
                                         <select
@@ -469,7 +484,6 @@ export default function Automation() {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">

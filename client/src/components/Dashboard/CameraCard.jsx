@@ -37,7 +37,7 @@ const CameraCard = ({ name, room, status, onToggle, onDelete }) => {
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                // Explicit play is handled in onLoadedMetadata, but doing it here defensively too
+
             }
             if (modalVideoRef.current) {
                 modalVideoRef.current.srcObject = stream;
@@ -47,22 +47,22 @@ const CameraCard = ({ name, room, status, onToggle, onDelete }) => {
             console.error("Camera access error:", err);
             setError("Доступ к камере запрещен");
             setIsStreaming(false);
-            // If we failed to start stream but status is ON, we might want to turn it OFF 
-            // to keep UI consistent, but let's just show error for now.
-            // if (onToggle && status) onToggle(); 
+
+
+
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Cleanup on unmount
+
     useEffect(() => {
         return () => {
             stopStream();
         };
     }, [stopStream]);
 
-    // React to external status changes. This is the SINGLE SOURCE OF TRUTH.
+
     useEffect(() => {
         if (status) {
             if (!isStreaming && !isLoading && !error) {
@@ -92,7 +92,7 @@ const CameraCard = ({ name, room, status, onToggle, onDelete }) => {
     }, [isPreviewOpen]);
 
     const handleToggle = () => {
-        // Just notify parent. Parent updates DB -> status prop changes -> useEffect triggers stream.
+
         if (onToggle) onToggle();
     };
 

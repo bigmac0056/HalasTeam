@@ -103,7 +103,6 @@ const SmartSphereAI = ({
       </div>
 
       <div className="space-y-4">
-        {/* Toggle Option */}
         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-primary/10 transition-all cursor-pointer">
           <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Автопилот

@@ -2,8 +2,8 @@ const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
 
 const createTransporter = () => {
-    // Check transport mode
-    const transport = process.env.MAIL_TRANSPORT || 'smtp'; // 'smtp' or 'resend'
+
+    const transport = process.env.MAIL_TRANSPORT || 'smtp';
 
     if (transport === 'resend') {
         const apiKey = process.env.RESEND_API_KEY;
@@ -13,7 +13,7 @@ const createTransporter = () => {
         return new Resend(apiKey);
     }
 
-    // SMTP Fallback
+
     const user = process.env.MAIL_USER;
     const rawPassword = process.env.MAIL_APP_PASSWORD;
     const pass = rawPassword ? rawPassword.replace(/\s+/g, '') : '';
@@ -39,8 +39,8 @@ const sendEmail = async (to, subject, text, attachments = []) => {
             const resend = createTransporter();
             const from = process.env.MAIL_FROM || 'SmartSphere <onboarding@resend.dev>';
 
-            // Convert attachments for Resend
-            // Resend expects { filename, content } where content is Buffer
+
+
             const resendAttachments = attachments.map(a => ({
                 filename: a.filename,
                 content: a.content
@@ -63,7 +63,7 @@ const sendEmail = async (to, subject, text, attachments = []) => {
             return true;
         }
 
-        // SMTP
+
         const transporter = createTransporter();
         const info = await transporter.sendMail({
             from: process.env.MAIL_FROM || process.env.MAIL_USER,

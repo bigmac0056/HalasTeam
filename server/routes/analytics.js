@@ -5,10 +5,10 @@ const { getAllDevices, getEnergyConsumptionByUserId } = require('../state');
 const { getRecommendations } = require('../services/recommendationService');
 const { getWeather } = require('../services/weatherService');
 
-// Все маршруты требуют аутентификации
+
 router.use(authMiddleware);
 
-// Получить аналитику
+
 router.get('/', async (req, res) => {
   try {
     const periodDays = Number(req.query.periodDays || 30);
@@ -25,13 +25,13 @@ router.get('/', async (req, res) => {
         })
       : energyRecords;
 
-    // Расчет общего энергопотребления
+
     const totalEnergyConsumption = filteredEnergyRecords.reduce(
       (sum, record) => sum + (record.energyConsumed || 0),
       0
     );
 
-    // Comparison against previous equal period (for period-based analytics only)
+
     let comparison = null;
     if (periodMs) {
       const currentPeriodStartTs = now - periodMs;
@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
       };
     }
 
-    // Статистика по комнатам
+
     const roomStats = {};
     devices.forEach(device => {
       if (!roomStats[device.room]) {
@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
       }
     });
 
-    // Статистика по типам устройств
+
     const typeStats = {};
     devices.forEach(device => {
       if (!typeStats[device.type]) {
@@ -86,7 +86,7 @@ router.get('/', async (req, res) => {
       }
     });
 
-    // Consumption by rooms (only for selected period)
+
     const deviceById = new Map(devices.map((device) => [device.id, device]));
     const deviceByName = new Map(devices.map((device) => [device.name, device]));
     const roomConsumption = {};
@@ -96,7 +96,7 @@ router.get('/', async (req, res) => {
       roomConsumption[roomName] = (roomConsumption[roomName] || 0) + Number(record.energyConsumed || 0);
     });
 
-    // Получение рекомендаций (опционально с погодой)
+
     let recommendations = [];
     const { lat, lon } = req.query;
     
@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
         const weatherData = await getWeather(parseFloat(lat), parseFloat(lon));
         recommendations = await getRecommendations(req.user.id, weatherData);
       } catch (error) {
-        // Если не удалось получить погоду, используем рекомендации без погоды
+
         recommendations = await getRecommendations(req.user.id);
       }
     } else {

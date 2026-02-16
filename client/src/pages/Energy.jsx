@@ -56,7 +56,7 @@ const persistCoords = (lat, lon) => {
     try {
         localStorage.setItem(LAST_KNOWN_COORDS_KEY, JSON.stringify({ lat, lon, savedAt: new Date().toISOString() }));
     } catch {
-        // Ignore storage errors.
+        return;
     }
 };
 
@@ -84,7 +84,7 @@ export default function Energy() {
     const [error, setError] = useState('');
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-    // User inputs for tariff calculation
+
     const [consumptionOverride, setConsumptionOverride] = useState(null);
     const [pendingConsumption, setPendingConsumption] = useState(null);
     const [occupants, setOccupants] = useState(1);
@@ -92,7 +92,7 @@ export default function Energy() {
     const [periodDays, setPeriodDays] = useState(30);
     const [isTariffUpdating, setIsTariffUpdating] = useState(false);
 
-    // Location state
+
     const [coords, setCoords] = useState(null);
     const [locationStatus, setLocationStatus] = useState('locating');
 
@@ -203,7 +203,7 @@ export default function Energy() {
         setLoading(true);
         setError('');
         try {
-            // 2. Fetch Analytics
+
             const analyticsRes = await API.get('/analytics', {
                 params: {
                     lat: coords.lat,
@@ -214,11 +214,11 @@ export default function Energy() {
             const analyticsData = analyticsRes.data?.analytics || null;
             setAnalytics(analyticsData);
 
-            // Determine consumption to use for calculation (real or override)
+
             const realConsumption = Number(analyticsData?.totalEnergyConsumption || 0);
             const calcConsumption = consumptionOverride !== null ? consumptionOverride : realConsumption;
 
-            // 3. Fetch Tariff + city from weather service for consistent geolocation naming
+
             const [tariffRes, weatherRes] = await Promise.all([
                 API.get('/tariffs/resolve', {
                     params: {
@@ -266,7 +266,7 @@ export default function Energy() {
         fetchAiStatus();
     }, [fetchAiStatus]);
 
-    // Format currency
+
     const formatKZT = (val) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT' }).format(val);
 
     const groupedByDay = (analytics?.recentActivity || []).reduce((acc, record) => {
@@ -345,9 +345,7 @@ export default function Energy() {
                     </div>
                 )}
 
-                {/* KPI Cards Row */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    {/* Active Devices */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
                             <span className="material-icons-round text-xl">devices</span>
@@ -358,7 +356,6 @@ export default function Energy() {
                         </h3>
                     </div>
 
-                    {/* Total Consumption */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
                             <span className="material-icons-round text-xl">flash_on</span>
@@ -369,7 +366,6 @@ export default function Energy() {
                         </h3>
                     </div>
 
-                    {/* Region */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4">
                             <span className="material-icons-round text-xl">location_on</span>
@@ -383,7 +379,6 @@ export default function Energy() {
                         )}
                     </div>
 
-                    {/* Estimated Cost */}
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 mb-4">
                             <span className="material-icons-round text-xl">payments</span>
@@ -395,7 +390,6 @@ export default function Energy() {
                     </div>
                 </div>
 
-                {/* Period Chart */}
                 <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Отчет за период</h2>
@@ -421,7 +415,6 @@ export default function Energy() {
                     </div>
                 </div>
 
-                {/* Period Comparison */}
                 {comparison && (
                     <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
                         <div className="flex items-center justify-between mb-5">
@@ -454,7 +447,6 @@ export default function Energy() {
                     </div>
                 )}
 
-                {/* Room Breakdown */}
                 <div className="bg-white dark:bg-card-dark p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Разбивка по комнатам</h2>
@@ -483,7 +475,6 @@ export default function Energy() {
                     )}
                 </div>
 
-                {/* Tariff Calculator Section */}
                 <div className="bg-white dark:bg-card-dark p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 mb-8">
                     <div className="flex items-center justify-between mb-6">
                         <div>
@@ -590,7 +581,6 @@ export default function Energy() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        {/* Left Column: Inputs */}
                         <div className="space-y-8">
                             <div>
                                 <div className="flex justify-between mb-2">
@@ -652,7 +642,6 @@ export default function Energy() {
                             </div>
                         </div>
 
-                        {/* Right Column: Result */}
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6">
                             <div className="flex justify-between items-start mb-8">
                                 <div>

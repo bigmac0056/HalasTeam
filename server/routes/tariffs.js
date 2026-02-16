@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const TariffService = require('../services/tariffService');
 
-// GET /api/tariffs/resolve
-// Params: lat, lon, monthlyKwh, stoveType, peopleCount
+
+
 router.get('/resolve', async (req, res) => {
     try {
         const { lat, lon, monthlyKwh, stoveType, peopleCount } = req.query;
@@ -27,7 +27,7 @@ router.get('/resolve', async (req, res) => {
     }
 });
 
-// GET /api/tariffs/providers
+
 router.get('/providers', (req, res) => {
     try {
         const providers = TariffService.getProviders();
@@ -38,7 +38,7 @@ router.get('/providers', (req, res) => {
     }
 });
 
-// GET /api/tariffs/supported-cities
+
 router.get('/supported-cities', (req, res) => {
     try {
         const cities = TariffService.getAllSupportedCities();

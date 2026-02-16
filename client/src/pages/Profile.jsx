@@ -9,12 +9,12 @@ export default function Profile() {
     const [isEditing, setIsEditing] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-    // Edit form state
+
     const [editName, setEditName] = useState('');
     const [editEmail, setEditEmail] = useState('');
     const [editAvatar, setEditAvatar] = useState('');
 
-    // Password change state
+
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +39,7 @@ export default function Profile() {
             setEditAvatar(res.data.avatar || '');
         } catch (error) {
             console.error('Error fetching profile:', error);
-            // If profile endpoint doesn't exist yet, use default values
+
             const defaultUser = {
                 name: 'User',
                 email: 'user@example.com',
@@ -124,10 +124,8 @@ export default function Profile() {
     return (
         <div className={darkMode ? 'dark' : ''}>
             <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-300">
-                {/* Header Navigation */}
                 <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
-                {/* Main Content */}
                 <main className="max-w-4xl mx-auto px-8 py-12">
                     <div className="mb-8">
                         <Link to="/dashboard" className="inline-flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors mb-4">
@@ -138,7 +136,6 @@ export default function Profile() {
                         <p className="text-text-muted-light dark:text-text-muted-dark mt-2">Управление настройками аккаунта и предпочтениями</p>
                     </div>
 
-                    {/* Profile Information Card */}
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-800 mb-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-text-light dark:text-text-dark">Личная информация</h2>
@@ -155,7 +152,6 @@ export default function Profile() {
 
                         {isEditing ? (
                             <form onSubmit={handleSaveProfile} className="space-y-6">
-                                {/* Avatar Selection */}
                                 <div>
                                     <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-3">Фото профиля</label>
                                     <div className="flex items-center gap-4 mb-4">
@@ -183,7 +179,6 @@ export default function Profile() {
                                     </div>
                                 </div>
 
-                                {/* Name */}
                                 <div>
                                     <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">Имя</label>
                                     <input
@@ -195,7 +190,6 @@ export default function Profile() {
                                     />
                                 </div>
 
-                                {/* Email */}
                                 <div>
                                     <label className="block text-sm font-medium text-text-light dark:text-text-dark mb-2">Email адрес</label>
                                     <input
@@ -207,7 +201,6 @@ export default function Profile() {
                                     />
                                 </div>
 
-                                {/* Action Buttons */}
                                 <div className="flex gap-3 pt-4">
                                     <button
                                         type="button"
@@ -246,7 +239,6 @@ export default function Profile() {
                         )}
                     </div>
 
-                    {/* Security Card */}
                     <div className="bg-white dark:bg-card-dark rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center justify-between mb-6">
                             <div>
@@ -327,7 +319,6 @@ export default function Profile() {
                         )}
                     </div>
 
-                    {/* Danger Zone */}
                     <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-8 shadow-sm border border-red-200 dark:border-red-900/30 mt-6">
                         <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Опасная зона</h2>
                         <p className="text-sm text-red-600/80 dark:text-red-400/80 mb-4">Необратимые действия</p>

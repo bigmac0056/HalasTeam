@@ -1,12 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Генерация уникального ID (Not needed for Prisma usually, but keeping for compatibility if utilized elsewhere, though Prisma UUIDs handle it)
+
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-// Управление пользователями
+
 const addUser = async (user) => {
   return await prisma.user.create({ data: user });
 };
@@ -32,7 +32,7 @@ const isSpeakerDevice = (device) => {
   return device.type === 'Speaker' || (device.type === 'Socket' && (name.includes('speaker') || name.includes('колон')));
 };
 
-// Управление устройствами
+
 const addDevice = async (device) => {
   return await prisma.device.create({ data: device });
 };
@@ -42,12 +42,12 @@ const getAllDevices = async (userId) => {
 };
 
 const findDeviceById = async (id, userId) => {
-  // Prisma findFirst for composite check
+
   return await prisma.device.findFirst({ where: { id, userId } });
 };
 
 const updateDevice = async (id, userId, updates) => {
-  // Ensure device belongs to user
+
   const device = await findDeviceById(id, userId);
   if (!device) return null;
   return await prisma.device.update({
@@ -57,8 +57,8 @@ const updateDevice = async (id, userId, updates) => {
 };
 
 const updateDeviceValue = async (id, userId, value, unit) => {
-  // Verify ownership implicitly via updateMany or explicit check
-  // updateMany is safer if we just want to target by userId + id
+
+
   const result = await prisma.device.updateMany({
     where: { id, userId },
     data: {
@@ -75,7 +75,7 @@ const deleteDevice = async (id, userId) => {
   return result.count > 0;
 };
 
-// Управление энергопотреблением
+
 const addEnergyConsumption = async (data) => {
   return await prisma.energyLog.create({ data });
 };
@@ -87,8 +87,8 @@ const getEnergyConsumptionByUserId = async (userId) => {
   });
 };
 
-// Automation Logs
-// Anti-spam: prevent duplicate messages within COOLDOWN_MS
+
+
 const logCooldowns = new Map();
 const LOG_COOLDOWN_MS = 60 * 1000;
 
@@ -125,7 +125,7 @@ const getAutomationLogsByUserId = async (userId) => {
   });
 };
 
-// Automation Rules
+
 const addAutomationRule = async (data) => {
   return await prisma.automationRule.create({
     data: {
@@ -165,7 +165,7 @@ const deleteAutomationRule = async (id, userId) => {
   return batch.count > 0;
 };
 
-// Notifications
+
 const addNotification = async (data) => {
   return await prisma.notification.create({
     data: {
@@ -201,7 +201,7 @@ const clearNotifications = async (userId) => {
   return true;
 };
 
-// Home Mode Helper
+
 const getHomeMode = async (userId) => {
   try {
     if (!userId) return 'Home';
@@ -256,12 +256,12 @@ const setHomeMode = async (userId, mode) => {
     create: { userId, homeMode: mode }
   });
 
-  // Side effects for Home Modes
+
   const devices = await getAllDevices(userId);
   const turnedOff = [];
 
   if (mode === 'Away' || mode === 'Vacation') {
-    // Turn off all lights and heaters/AC
+
     for (const device of devices) {
       if (device.status && (device.type === 'Light' || device.type === 'Heater' || device.type === 'AC' || device.type === 'Socket' || isSpeakerDevice(device))) {
         await updateDevice(device.id, userId, { status: false });
@@ -294,7 +294,7 @@ const setHomeMode = async (userId, mode) => {
 
     return { homeMode: settings.homeMode, message, turnedOff };
   } else if (mode === 'Night') {
-    // Turn off all lights and speakers
+
     for (const device of devices) {
       if (device.status && (device.type === 'Light' || isSpeakerDevice(device))) {
         await updateDevice(device.id, userId, { status: false });

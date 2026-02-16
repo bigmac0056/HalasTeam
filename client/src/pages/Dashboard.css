@@ -34,7 +34,6 @@
   box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
-/* Режим дома */
 .home-mode-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 25px;
@@ -90,7 +89,6 @@
   font-size: 20px;
 }
 
-/* Погода */
 .weather-section {
   background: #f8f9fa;
   padding: 20px;
@@ -155,7 +153,6 @@
   transform: translateY(-1px);
 }
 
-/* Автоматизация */
 .automation-section {
   background: #e7f3ff;
   padding: 20px;
@@ -236,7 +233,6 @@
   color: #666;
 }
 
-/* Добавление устройства */
 .add-device-section {
   background: #fff;
   padding: 20px;
@@ -291,7 +287,6 @@
   box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
 }
 
-/* Bento Grid для устройств */
 .devices-section {
   margin-bottom: 30px;
 }
@@ -430,7 +425,6 @@
   font-size: 16px;
 }
 
-/* История автоматизаций */
 .automation-log-section {
   background: #fff3cd;
   padding: 20px;
@@ -461,7 +455,6 @@
   line-height: 1.6;
 }
 
-/* Скроллбар для логов */
 .automation-log-list::-webkit-scrollbar {
   width: 6px;
 }

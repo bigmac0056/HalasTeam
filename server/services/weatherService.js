@@ -37,8 +37,8 @@ const mapOpenWeatherToMeteoCode = (weatherId, isDay) => {
   const code = Number(weatherId);
   if (!Number.isFinite(code)) return isDay ? 2 : 0;
 
-  if (code >= 200 && code < 300) return 95; // thunderstorm
-  if (code >= 300 && code < 400) return 51; // drizzle
+  if (code >= 200 && code < 300) return 95;
+  if (code >= 300 && code < 400) return 51;
   if (code === 500 || code === 501) return 63;
   if (code >= 502 && code <= 504) return 65;
   if (code === 511) return 56;

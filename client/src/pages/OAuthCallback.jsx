@@ -7,7 +7,7 @@ export default function OAuthCallback() {
     const exchangedRef = useRef(false);
 
     useEffect(() => {
-        // Guard against React Strict Mode double-invocation
+
         if (exchangedRef.current) return;
 
         const code = searchParams.get('code');

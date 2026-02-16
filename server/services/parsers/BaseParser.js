@@ -4,15 +4,6 @@ class BaseParser {
         this.region = region;
     }
 
-    /**
-     * Parse tariff data
-     * @returns {Promise<{
-     *   effectiveDate: string,
-     *   vatIncluded: boolean,
-     *   levels: Array<{type, stoveType, tiers: []}>,
-     *   rawTextHash: string
-     * }>}
-     */
     async parse() {
         throw new Error("Method 'parse' must be implemented");
     }
@@ -21,7 +12,7 @@ class BaseParser {
         if (!data.levels || !Array.isArray(data.levels)) {
             throw new Error("Invalid format: 'levels' array missing");
         }
-        // Basic validation logic
+
         return true;
     }
 }

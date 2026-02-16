@@ -96,7 +96,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
             <div className="bg-white dark:bg-card-dark rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
-                {/* Header */}
                 <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center sticky top-0 bg-white dark:bg-card-dark z-10">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Отчет энергопотребления</h2>
@@ -107,7 +106,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-8 flex-1">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
@@ -116,7 +114,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                         </div>
                     ) : report ? (
                         <div className="space-y-8">
-                            {/* Tariff Metadata */}
                             {report.tariff && (
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-xl flex items-start gap-3">
                                     <span className="material-icons-round text-blue-500 mt-1">info</span>
@@ -127,7 +124,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                                 </div>
                             )}
 
-                            {/* Summary Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl">
                                     <p className="text-sm text-slate-500 mb-1">Всего потреблено</p>
@@ -143,7 +139,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                                 </div>
                             </div>
 
-                            {/* Top Consumers */}
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Топ потребители</h3>
                                 <div className="space-y-3">
@@ -161,7 +156,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                                 </div>
                             </div>
 
-                            {/* Recommendations */}
                             {report.recommendations.length > 0 && (
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Рекомендации AI</h3>
@@ -189,7 +183,6 @@ export default function ReportModal({ isOpen, onClose, periodDays, coords, stove
                     )}
                 </div>
 
-                {/* Footer Actions */}
                 <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col gap-4 z-10 rounded-b-3xl">
                     <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                         <button

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock API module
+
 vi.mock('../api/api', () => ({
     default: {
         get: vi.fn(() => Promise.resolve({ data: {} })),
@@ -31,11 +31,11 @@ describe('Login Page', () => {
             </MemoryRouter>
         );
 
-        // Check for email input by placeholder
+
         const emailInput = screen.getByPlaceholderText('name@example.com');
         expect(emailInput).toBeInTheDocument();
 
-        // Check for password input by placeholder
+
         const passwordInput = screen.getByPlaceholderText('••••••••');
         expect(passwordInput).toBeInTheDocument();
     });
@@ -47,11 +47,11 @@ describe('Login Page', () => {
             </MemoryRouter>
         );
 
-        // Use getAllByText and verify we find the tab buttons
+
         const loginElements = screen.getAllByText(/войти/i);
         const registerElements = screen.getAllByText(/регистрация/i);
 
-        // At least 1 login and 1 register element should exist (tabs)
+
         expect(loginElements.length).toBeGreaterThanOrEqual(1);
         expect(registerElements.length).toBeGreaterThanOrEqual(1);
     });
@@ -63,7 +63,7 @@ describe('Login Page', () => {
             </MemoryRouter>
         );
 
-        // Use getAllByText to handle multiple occurrences
+
         const branding = screen.getAllByText(/SmartSphere/i);
         expect(branding.length).toBeGreaterThan(0);
     });

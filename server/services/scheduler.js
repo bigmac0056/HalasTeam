@@ -6,7 +6,7 @@ const {
     addNotification
 } = require('../state');
 
-// Check every 30 seconds
+
 const CHECK_INTERVAL = 30 * 1000;
 const SENSOR_EVENT_COOLDOWN_MS = 120 * 1000;
 const sensorEventCooldowns = new Map();
@@ -61,11 +61,11 @@ const checkAndExecuteRules = async (forceRuleId = null) => {
 
         const rules = await prisma.automationRule.findMany({
             where,
-            include: { user: true } // Need user timezone if supported, otherwise default
+            include: { user: true }
         });
 
         const now = new Date();
-        // Default to Asia/Almaty as requested, or user's TZ if we had it
+
         const timeZone = 'Asia/Almaty';
         const formatter = new Intl.DateTimeFormat('en-US', {
             hour: '2-digit',
@@ -73,12 +73,12 @@ const checkAndExecuteRules = async (forceRuleId = null) => {
             hour12: false,
             timeZone
         });
-        const currentTimeStr = formatter.format(now); // "18:30"
+        const currentTimeStr = formatter.format(now);
 
         const executed = [];
 
         for (const rule of rules) {
-            // Parse Trigger
+
             let triggerData;
             try {
                 triggerData = JSON.parse(rule.trigger);
@@ -86,21 +86,21 @@ const checkAndExecuteRules = async (forceRuleId = null) => {
                 continue;
             }
 
-            // Check Time Trigger
+
             if (triggerData.type === 'time') {
                 const ruleTime = getTriggerTime(triggerData);
                 if (ruleTime === currentTimeStr) {
-                    // Check if already executed this minute (Debounce)
+
                     if (rule.lastTriggeredAt) {
                         const lastRun = new Date(rule.lastTriggeredAt);
                         const timeSince = now - lastRun;
                         if (timeSince < 60000) {
-                            // Already ran within the last minute
+
                             continue;
                         }
                     }
 
-                    // EXECUTE
+
                     const result = await executeRuleAction(rule);
                     if (result) executed.push(result);
                 }
@@ -116,6 +116,13 @@ const checkAndExecuteRules = async (forceRuleId = null) => {
 
 const executeRuleAction = async (rule) => {
     try {
+        let triggerData;
+        try {
+            triggerData = JSON.parse(rule.trigger);
+        } catch (e) {
+            triggerData = {};
+        }
+
         let actionData;
         try {
             actionData = JSON.parse(rule.action);
@@ -133,21 +140,21 @@ const executeRuleAction = async (rule) => {
 
         if (!device) return null;
 
-        // Execute Device Change
+
         if (device.status !== desiredStatus) {
             await updateDevice(device.id, rule.userId, { status: desiredStatus });
 
             const statusText = desiredStatus ? 'ВКЛ' : 'ВЫКЛ';
             const message = `⚡ Автоматизация: ${device.name} ${statusText} ("${rule.name}")`;
 
-            // Log
+
             await addAutomationLog({
                 userId: rule.userId,
                 message: message,
                 metadata: JSON.stringify({ source: 'scheduler', ruleId: rule.id })
             });
 
-            // Notify
+
             await addNotification({
                 userId: rule.userId,
                 title: 'Автоматизация',
@@ -156,11 +163,24 @@ const executeRuleAction = async (rule) => {
                 icon: 'smart_toy'
             });
 
-            // Update Last Triggered
+
             await prisma.automationRule.update({
                 where: { id: rule.id },
                 data: { lastTriggeredAt: new Date() }
             });
+
+            if (triggerData?.once === true) {
+                await prisma.automationRule.update({
+                    where: { id: rule.id },
+                    data: { enabled: false }
+                });
+
+                await addAutomationLog({
+                    userId: rule.userId,
+                    message: `Одноразовое правило "${rule.name}" выполнено и отключено`,
+                    metadata: JSON.stringify({ source: 'scheduler', ruleId: rule.id, type: 'one_time_completed' })
+                });
+            }
 
             console.log(`Executed Rule: ${rule.name}`);
 

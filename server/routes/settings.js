@@ -5,7 +5,7 @@ const { getHomeMode, setHomeMode, getAutopilotEnabled, setAutopilotEnabled } = r
 
 router.use(authMiddleware);
 
-// Get current home mode
+
 router.get('/mode', async (req, res) => {
     try {
         const mode = await getHomeMode(req.user.id);
@@ -15,7 +15,7 @@ router.get('/mode', async (req, res) => {
     }
 });
 
-// Update home mode with automatic device safety
+
 router.post('/mode', async (req, res) => {
     const { mode } = req.body;
     const validModes = ['Home', 'Away', 'Night', 'Vacation'];
@@ -27,8 +27,8 @@ router.post('/mode', async (req, res) => {
     try {
         const result = await setHomeMode(req.user.id, mode);
 
-        // Result contains { homeMode, message, turnedOff }
-        // Notifications are already handled in state.js
+
+
 
         res.json({
             mode: result.homeMode,

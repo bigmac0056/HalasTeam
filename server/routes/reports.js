@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 router.use(authMiddleware);
 
-// Helper to gather report data
+
 const getReportData = async (userId, periodDays, options = {}) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - periodDays);
@@ -50,22 +50,22 @@ const getReportData = async (userId, periodDays, options = {}) => {
         if (typeof tariff?.totalKzt === 'number') {
             totalCost = tariff.totalKzt;
         } else {
-            // Fallback if tariff resolution returns valid object but no cost (rare)
-            // For now, keep 0 to avoid matching discrepancy, or could use default 21
-            // totalCost = totalConsumption * 21; 
+
+
+
         }
     } else {
-        // If we can't resolve tariff (no lat/lon), fallback to a reasonable default
-        // to avoid showing 0 if the user just hasn't set location.
-        // But the user specifically asked to sync with calculator. 
-        // If calculator shows X, we want X. 
-        // If calculator has no location, it uses default provider?
-        // Let's stick to 0 or a known default if no location.
-        // Actually, Energy.jsx defaults to Almaty if no location?
-        // Let's use 0 to be safe and encourage setting location.
+
+
+
+
+
+
+
+
     }
 
-    // Group by device
+
     const deviceMap = {};
     logs.forEach(log => {
         const name = log.deviceName || 'Unknown';
@@ -77,7 +77,7 @@ const getReportData = async (userId, periodDays, options = {}) => {
         .sort((a, b) => b.kwh - a.kwh)
         .slice(0, 5);
 
-    // Refresh and return active AI recommendations so report is always up-to-date
+
     let recommendations = [];
     try {
         recommendations = await aiService.generateRecommendations(userId);

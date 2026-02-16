@@ -9,14 +9,14 @@ const Header = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Lazy init for theme
+
     const [isDark, setIsDark] = useState(() => {
         const storedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         return storedTheme === 'dark' || (!storedTheme && systemPrefersDark);
     });
 
-    // Apply theme side-effect
+
     useEffect(() => {
         if (isDark) {
             document.documentElement.classList.add('dark');
@@ -71,17 +71,17 @@ const Header = () => {
 
     const markAllRead = async () => {
         try {
-            // Assuming APIs supports this or we iterate. 
-            // Since prompt asked for 'mark all as read UX', and API might not have bulk endpoint, 
-            // I'll use the clear (DELETE) as "Clear All" is already there. 
-            // If I need true "Mark All Read", I'd need a new endpoint or loop. 
-            // For now, I'll stick to clarifying the UI. 
-            // Actually, I'll add a loop for now or just visual update if backend lacks bulk.
-            // But valid "Mark all read" usually calls an endpoint.
-            // Let's implement it as a visual update + loop for MVP if needed, 
-            // OR just rely on "Clear" which deletes them. 
-            // The prompt mainly asked for "UX". I will add "Mark read" per item logic first.
-            // For "Mark all", I'll loop frontend for now if endpoint missing.
+
+
+
+
+
+
+
+
+
+
+
             const unread = notifications.filter(n => !n.isRead);
             await Promise.all(unread.map(n => API.patch(`/notifications/${n.id}/read`)));
             fetchNotifications();
@@ -101,12 +101,16 @@ const Header = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (token) {
-            // eslint-disable-next-line
+        if (!token) return undefined;
+
+        const timeout = setTimeout(() => {
             fetchNotifications();
-            const interval = setInterval(fetchNotifications, 15000); // Polling every 15s per requirement
-            return () => clearInterval(interval);
-        }
+        }, 0);
+        const interval = setInterval(fetchNotifications, 15000);
+        return () => {
+            clearTimeout(timeout);
+            clearInterval(interval);
+        };
     }, [fetchNotifications]);
 
     return (
@@ -160,7 +164,6 @@ const Header = () => {
                         onClick={toggleDarkMode}
                         title={isDark ? "Светлая тема" : "Темная тема"}
                     >
-                        {/* Status: Logic simplified to prevent duplicates */}
                         {isDark ? (
                             <span className="material-icons-round text-xl text-yellow-400">light_mode</span>
                         ) : (
@@ -181,7 +184,6 @@ const Header = () => {
                             )}
                         </button>
 
-                        {/* Notification Dropdown */}
                         {showNotifications && (
                             <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden transform transition-all origin-top-right animate-in fade-in slide-in-from-top-2">
                                 <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm">

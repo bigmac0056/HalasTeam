@@ -12,7 +12,7 @@ const isValidFontFile = (fontPath) => {
         fs.readSync(fd, header, 0, 4, 0);
         fs.closeSync(fd);
         const signature = header.toString('ascii');
-        // TrueType/OpenType signatures
+
         return signature === 'OTTO' || signature === 'ttcf' || signature === 'true' || header.equals(Buffer.from([0x00, 0x01, 0x00, 0x00]));
     } catch {
         return false;
@@ -29,7 +29,7 @@ const resolveFonts = () => {
         return { regular: robotoRegular, bold: robotoBold };
     }
 
-    // Fallback candidates
+
     const CANDIDATES = [
         { regular: '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf', bold: '/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf' },
         { regular: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', bold: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' },
@@ -87,7 +87,7 @@ const generateEnergyReport = async (data) => {
             doc.on('data', buffers.push.bind(buffers));
             doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-            // Title
+
             useBold();
             doc.fontSize(20).text('Energy Report', { align: 'center' });
             doc.moveDown();
@@ -98,7 +98,7 @@ const generateEnergyReport = async (data) => {
             doc.moveDown();
             doc.moveDown();
 
-            // Tariff Info
+
             if (data.tariff) {
                 useBold();
                 doc.fontSize(14).text('Tariff Information');
@@ -109,7 +109,7 @@ const generateEnergyReport = async (data) => {
                 doc.moveDown();
             }
 
-            // Consumption Summary
+
             useBold();
             doc.fontSize(14).text('Consumption Summary');
             useRegular();
@@ -119,7 +119,7 @@ const generateEnergyReport = async (data) => {
             doc.text(`Average Daily: ${data.avgDaily.toFixed(2)} kWh`);
             doc.moveDown();
 
-            // Top Consumers
+
             useBold();
             doc.fontSize(14).text('Top Consumers');
             useRegular();
@@ -133,7 +133,7 @@ const generateEnergyReport = async (data) => {
             }
             doc.moveDown();
 
-            // AI Recommendations
+
             if (data.recommendations && data.recommendations.length > 0) {
                 useBold();
                 doc.fontSize(14).text('AI Recommendations');

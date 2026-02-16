@@ -20,18 +20,18 @@ export default function InfoPage() {
         );
     }
 
-    // Check dark mode preference on mount to ensure correct styling if reloaded directly
-    // Actually, usually this is handled by a context or root component, but Landing handles it locally.
-    // We can just add the dark class checking if we want, or rely on html class.
-    // Since Landing toggles documentElement class, it should persist if user navigated. 
-    // But if refreshed, it might default to light.
-    // Ideally App should handle theme. But Landing has local state.
-    // I will check local storage for theme or just let it be. Landing uses local state.
-    // I'll add a simple dark mode init here too if needed, but 'dark' class on html is usually persistent via local storage if implemented globally.
-    // Landing implements it via state but toggles html class.
-    // I'll assume html class persists or at least rely on system preference if I added that logic.
-    // Actually, Landing.jsx `useState(false)` defaults to light.
-    // I'll just rely on whatever is set on <html> tag.
+
+
+
+
+
+
+
+
+
+
+
+
 
     return (
         <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-300">

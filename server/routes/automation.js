@@ -42,7 +42,7 @@ const classifyLog = (log) => {
   return 'manual';
 };
 
-// Get all automation rules
+
 router.get('/', async (req, res) => {
   try {
     const rules = await getAutomationRulesByUserId(req.user.id);
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create a new automation rule
+
 router.post('/', async (req, res) => {
   try {
     const { name, trigger, action, icon } = req.body;
@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Toggle an automation rule
+
 router.patch('/:id/toggle', async (req, res) => {
   try {
     const rule = await toggleAutomationRule(req.params.id, req.user.id);
@@ -88,7 +88,7 @@ router.patch('/:id/toggle', async (req, res) => {
   }
 });
 
-// Clear automation logs
+
 router.delete('/logs', async (req, res) => {
   try {
     const { before, all } = req.query;
@@ -96,9 +96,9 @@ router.delete('/logs', async (req, res) => {
     let where = { userId };
 
     if (all === 'true') {
-      // Delete all logs for user
+
     } else if (before) {
-      // Delete logs before a specific date
+
       const date = new Date(before);
       if (isNaN(date.getTime())) {
         return res.status(400).json({ error: 'Invalid date format' });
@@ -110,7 +110,7 @@ router.delete('/logs', async (req, res) => {
 
     const batch = await prisma.automationLog.deleteMany({ where });
 
-    // Add a system log about the cleanup
+
     if (batch.count > 0) {
       await addAutomationLog({
         userId,
@@ -126,7 +126,7 @@ router.delete('/logs', async (req, res) => {
   }
 });
 
-// Delete an automation rule
+
 router.delete('/:id', async (req, res) => {
   try {
     const success = await deleteAutomationRule(req.params.id, req.user.id);
@@ -140,10 +140,10 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Execute automation rules — checks all enabled rules and performs matching actions
+
 router.post('/execute', async (req, res) => {
   try {
-    const { temperature } = req.body; // current temperature from client
+    const { temperature } = req.body;
     const rules = await getAutomationRulesByUserId(req.user.id);
     const devices = await getAllDevices(req.user.id);
     const executed = [];
@@ -156,13 +156,13 @@ router.post('/execute', async (req, res) => {
         triggerData = JSON.parse(rule.trigger);
         actionData = JSON.parse(rule.action);
       } catch {
-        continue; // Skip rules with non-JSON (legacy text) format
+        continue;
       }
 
       let shouldExecute = false;
 
-      // Time-based trigger: { type: "time", time: "HH:MM" }
-      // Uses a 2-minute window to avoid missing the target minute with 60s checks
+
+
       if (triggerData.type === 'time') {
         const now = new Date();
         const triggerTime = triggerData.time || triggerData.value;
@@ -171,11 +171,11 @@ router.post('/execute', async (req, res) => {
         const targetMs = targetHour * 3600000 + targetMin * 60000;
         const nowMs = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
         const diff = nowMs - targetMs;
-        // Trigger if within 0 to 2 minutes after the target time
+
         shouldExecute = diff >= 0 && diff < 120000;
       }
 
-      // Temperature-based trigger: { type: "temperature", operator: "<" | ">", value: 20 }
+
       if (triggerData.type === 'temperature' && temperature !== undefined) {
         if (triggerData.operator === '<') {
           shouldExecute = temperature < triggerData.value;
@@ -186,7 +186,7 @@ router.post('/execute', async (req, res) => {
 
       if (!shouldExecute) continue;
 
-      // Action: { deviceId: "...", setStatus: true/false }
+
       const targetDevice = devices.find(d => d.id === actionData.deviceId);
       if (!targetDevice) continue;
       const desiredStatus = typeof actionData.status === 'boolean'
@@ -194,7 +194,7 @@ router.post('/execute', async (req, res) => {
         : actionData.setStatus;
       if (typeof desiredStatus !== 'boolean') continue;
 
-      // Only act if device is not already in the desired state
+
       if (targetDevice.status === desiredStatus) continue;
 
       await updateDevice(targetDevice.id, req.user.id, { status: desiredStatus });
@@ -214,7 +214,29 @@ router.post('/execute', async (req, res) => {
         })
       });
 
-      // Create notification for automation action
+      await prisma.automationRule.update({
+        where: { id: rule.id },
+        data: { lastTriggeredAt: new Date() }
+      });
+
+      if (triggerData?.once === true) {
+        await prisma.automationRule.update({
+          where: { id: rule.id },
+          data: { enabled: false }
+        });
+
+        await addAutomationLog({
+          userId: req.user.id,
+          message: `Одноразовое правило "${rule.name}" выполнено и отключено`,
+          metadata: JSON.stringify({
+            source: 'automation',
+            ruleId: rule.id,
+            type: 'one_time_completed'
+          })
+        });
+      }
+
+
       await addNotification({
         userId: req.user.id,
         title: 'Автоматизация',
@@ -238,7 +260,7 @@ router.post('/execute', async (req, res) => {
   }
 });
 
-// Manual trigger for scheduler (Debug/Testing)
+
 router.post('/execute-now', async (req, res) => {
   try {
     const { checkAndExecuteRules } = require('../services/scheduler');
@@ -255,7 +277,7 @@ router.post('/execute-now', async (req, res) => {
   }
 });
 
-// Get automation logs
+
 router.get('/logs', async (req, res) => {
   try {
     const type = String(req.query.type || 'all').toLowerCase();
@@ -278,7 +300,7 @@ router.get('/logs', async (req, res) => {
   }
 });
 
-// Add automation log
+
 router.post('/logs', async (req, res) => {
   try {
     const { message, metadata } = req.body;

@@ -91,7 +91,7 @@ const getRecommendations = async (userId, weatherData = null) => {
     });
   }
 
-  // Если нет активных устройств
+
   if (activeDevices.length === 0 && devices.length > 0) {
     recommendations.push({
       type: 'info',

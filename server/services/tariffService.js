@@ -6,7 +6,7 @@ const EkrecParser = require('./parsers/EkrecParser');
 
 const DATA_FILE = path.join(__dirname, '../data/tariffs.json');
 
-// Helper to load data
+
 const loadData = () => {
     if (!fs.existsSync(DATA_FILE)) return { providers: [], snapshots: {} };
     return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
@@ -37,11 +37,11 @@ const TariffService = {
                 results.push({ provider: provider.id, status: 'failed', error: err.message });
             }
         }
-        // fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); // Mock save
+
         return results;
     },
 
-    // Get all supported cities
+
     getAllSupportedCities: function () {
         const providers = this.getProviders();
         return providers.map(p => ({
@@ -53,15 +53,15 @@ const TariffService = {
         }));
     },
 
-    // Geocoding: maps lat/lon to a known region
+
     resolveRegion: async (lat, lon) => {
         const providers = TariffService.getProviders();
         if (!providers || providers.length === 0) return null;
 
-        const R = 6371; // Radius of the earth in km
+        const R = 6371;
         let closestCity = null;
         let minDistance = Infinity;
-        const MAX_DISTANCE_KM = 250; // Threshold
+        const MAX_DISTANCE_KM = 250;
 
         providers.forEach(p => {
             if (p.coordinates) {
@@ -85,7 +85,7 @@ const TariffService = {
             return closestCity;
         }
 
-        return null; // Unknown region
+        return null;
     },
 
     getProviders: () => {
@@ -124,7 +124,7 @@ const TariffService = {
             };
         }
 
-        // Use new tariff structure from JSON
+
         const tariffs = provider.tariffs?.electric?.tiers;
 
         if (!tariffs) {
@@ -136,7 +136,7 @@ const TariffService = {
             };
         }
 
-        // Calculate Cost
+
         let remainingKwh = Number(monthlyKwh);
         let totalCost = 0;
         const breakdown = [];
@@ -145,35 +145,35 @@ const TariffService = {
         for (const tier of tariffs) {
             if (remainingKwh <= 0) break;
 
-            // Tier limits in JSON are usually "up to X".
-            // null limit means "rest".
-            // We apply per-person scaling logic if it's small (<=150)
+
+
+
 
             const rawLimit = tier.limit === null ? Infinity : tier.limit;
             let effectiveLimit = rawLimit;
 
-            // Simple heuristic: if limit is small (<200), it's likely per person.
-            // If it's big (>500), it's likely per household?
-            // For now, let's assume raw limits are per person (standard KZ practice).
+
+
+
             if (rawLimit !== Infinity) {
                 effectiveLimit = rawLimit * peopleCount;
             }
 
-            // Calculate tier size (delta)
-            // Previous limit also needs scaling
-            // Wait, usually tiers are "0-90", "90-140", "140+".
-            // So Tier 1 size = 90. Tier 2 size = 140 - 90 = 50.
-            // If scaled: Tier 1 size = 90*N. Tier 2 size = 50*N.
-            // Let's calculate the 'tier bucket size'
 
-            // Actually, the structure in JSON is slightly ambiguous: "limit: 90" means "0 to 90" or "chunk size 90"?
-            // Usually it means "up to 90".
-            // So:
-            // Tier 1: 0 -> 90.
-            // Tier 2: 90 -> 140.
-            // Tier 3: 140 -> Infinity.
 
-            // Let's implement this standard interpretation.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             const previousLimitScaled = previousLimit * peopleCount;
             const currentLimitScaled = rawLimit === Infinity ? Infinity : rawLimit * peopleCount;

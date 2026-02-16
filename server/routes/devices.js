@@ -17,10 +17,10 @@ const isSpeakerDevice = (device) => {
   return device.type === 'Speaker' || (device.type === 'Socket' && (name.includes('speaker') || name.includes('колон')));
 };
 
-// Все маршруты требуют аутентификации
+
 router.use(authMiddleware);
 
-// Получить все устройства пользователя
+
 router.get('/', async (req, res) => {
   try {
     const devices = await getAllDevices(req.user.id);
@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Добавить новое устройство
+
 router.post('/add', async (req, res) => {
   try {
     const { name, room, type, source, sensorType } = req.body;
@@ -49,7 +49,7 @@ router.post('/add', async (req, res) => {
       type,
       source: source || 'Unknown',
       sensorType,
-      status: false // По умолчанию выключено
+      status: false
     });
 
     res.status(201).json({
@@ -61,7 +61,7 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// Переключить статус устройства
+
 router.post('/toggle', async (req, res) => {
   try {
     const { deviceId } = req.body;
@@ -75,17 +75,17 @@ router.post('/toggle', async (req, res) => {
       return res.status(404).json({ error: 'Устройство не найдено' });
     }
 
-    // Переключение статуса
+
     const newStatus = !device.status;
     await updateDevice(deviceId, req.user.id, { status: newStatus });
 
-    // Запись энергопотребления
+
     await addEnergyConsumption({
       userId: req.user.id,
       deviceId: device.id,
       deviceName: device.name,
       action: newStatus ? 'on' : 'off',
-      energyConsumed: newStatus ? 1 : 0 // Упрощенная модель
+      energyConsumed: newStatus ? 1 : 0
     });
 
     const updatedDevice = await findDeviceById(deviceId, req.user.id);
@@ -110,7 +110,7 @@ router.post('/toggle', async (req, res) => {
   }
 });
 
-// Обновить яркость устройства
+
 router.put('/:deviceId/brightness', async (req, res) => {
   try {
     const { deviceId } = req.params;
@@ -140,7 +140,7 @@ router.put('/:deviceId/brightness', async (req, res) => {
   }
 });
 
-// Обновить значение устройства (температура и т.д.)
+
 router.put('/:deviceId/value', async (req, res) => {
   try {
     const { deviceId } = req.params;
@@ -158,7 +158,7 @@ router.put('/:deviceId/value', async (req, res) => {
     const { updateDeviceValue } = require('../state');
     const updatedDevice = await updateDeviceValue(deviceId, req.user.id, value, unit);
 
-    // Trigger Sensor Automation
+
     if (updatedDevice) {
       const { checkSensorRules } = require('../services/scheduler');
       await checkSensorRules(updatedDevice);
@@ -174,7 +174,7 @@ router.put('/:deviceId/value', async (req, res) => {
   }
 });
 
-// Удалить устройство
+
 router.delete('/:deviceId', async (req, res) => {
   try {
     const { deviceId } = req.params;

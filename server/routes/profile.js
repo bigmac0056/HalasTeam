@@ -6,9 +6,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware);
 
-// Get user profile
+
 router.get('/', (req, res) => {
-    // req.user is already populated by authMiddleware (await findUserById)
+
     const user = req.user;
 
     res.json({
@@ -18,13 +18,13 @@ router.get('/', (req, res) => {
     });
 });
 
-// Update user profile
+
 router.put('/', async (req, res) => {
     const { name, email, avatar } = req.body;
     const user = req.user;
 
     try {
-        // Check if new email is already taken by another user
+
         if (email && email !== user.email) {
             const emailExists = await findUserByEmail(email);
             if (emailExists) {
@@ -52,7 +52,7 @@ router.put('/', async (req, res) => {
     }
 });
 
-// Change password
+
 router.put('/password', async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = req.user;
@@ -66,13 +66,13 @@ router.put('/password', async (req, res) => {
     }
 
     try {
-        // Verify current password
+
         const validPassword = await bcrypt.compare(currentPassword, user.password);
         if (!validPassword) {
             return res.status(401).json({ error: 'Current password is incorrect' });
         }
 
-        // Hash and update new password
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await updateUser(user.id, { password: hashedPassword });
 
@@ -82,7 +82,7 @@ router.put('/password', async (req, res) => {
     }
 });
 
-// Update avatar
+
 router.put('/avatar', async (req, res) => {
     const { avatar } = req.body;
     const user = req.user;

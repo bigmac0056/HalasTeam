@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import API from '../../api/api';
 
 const SensorCard = ({ device, onUpdate, onDelete }) => {
-    // Determine alert state (assuming value 1 is alert for binary sensors)
+
     const isAlert = device.value === 1 || device.isAlert;
     const [loading, setLoading] = useState(false);
 
     const handleSimulate = async (trigger) => {
         setLoading(true);
         try {
-            // For boolean sensors (Smoke, Water, Motion), 1 = Active/Danger, 0 = Inactive/Safe
-            const newValue = trigger ? 1 : 0;
-            // Toggle generic endpoint
-            // Ideally we should use a specific endpoint or just update value
-            // We'll use the generic verify-compatible 'toggle' or 'update value' if available
-            // But usually sensors push data. Here we simulate it via API.
 
-            // Checking if we have a specific endpoint for updating value
-            // The instructions mentioned: POST /devices/:id/value
+            const newValue = trigger ? 1 : 0;
+
+
+
+
+
+
+
             await API.put(`/devices/${device.id}/value`, {
                 value: newValue,
                 unit: device.unit || ''
@@ -65,7 +65,7 @@ const SensorCard = ({ device, onUpdate, onDelete }) => {
             colorClass = 'text-red-500';
             bgClass = 'bg-red-100 dark:bg-red-900/30';
             alertLabel = 'HIGH TEMP';
-            // Logic for temp simulation might differ (slider?) but buttons work for min/max demo
+
         }
     }
 

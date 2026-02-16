@@ -59,7 +59,7 @@ const normalizeTrackUrl = (track, req) => {
       normalized.fileUrl = `${requestOrigin}${parsed.pathname}`;
     }
   } catch (e) {
-    // Keep original url if parsing fails.
+
   }
 
   return normalized;
@@ -467,7 +467,7 @@ router.post('/playback/play', async (req, res) => {
     await ensureActiveSpeaker(req.user.id);
     let state = await prisma.userPlaybackState.findUnique({ where: { userId: req.user.id } });
 
-    // If no state or no track, try to find a default playlist
+
     if (!state || !state.currentTrackId) {
       const playlist = await prisma.playlist.findFirst({
         where: { userId: req.user.id },
@@ -521,7 +521,7 @@ router.post('/playback/play', async (req, res) => {
       });
     }
 
-    // Return full track info
+
     const track = await prisma.track.findUnique({ where: { id: state.currentTrackId } });
     res.json({ ...state, currentTrack: normalizeTrackUrl(track, req) });
   } catch (e) {
@@ -550,7 +550,7 @@ router.post('/playback/next', async (req, res) => {
       return res.status(400).json({ error: 'Нет активного трека' });
     }
 
-    // If playback is not bound to a playlist, cycle through user library.
+
     if (!state.playlistId) {
       const library = await prisma.track.findMany({
         where: { userId: req.user.id },
@@ -581,13 +581,13 @@ router.post('/playback/next', async (req, res) => {
 
     if (!currentPt) return res.status(400).json({ error: 'Трек не найден в плейлисте' });
 
-    // Find next track
+
     let nextPt = await prisma.playlistTrack.findFirst({
       where: { playlistId: state.playlistId, position: { gt: currentPt.position } },
       orderBy: { position: 'asc' }
     });
 
-    // Loop to start
+
     if (!nextPt) {
       nextPt = await prisma.playlistTrack.findFirst({
         where: { playlistId: state.playlistId },
@@ -618,7 +618,7 @@ router.post('/playback/prev', async (req, res) => {
       return res.status(400).json({ error: 'Нет активного трека' });
     }
 
-    // If playback is not bound to a playlist, cycle through user library.
+
     if (!state.playlistId) {
       const library = await prisma.track.findMany({
         where: { userId: req.user.id },
@@ -650,13 +650,13 @@ router.post('/playback/prev', async (req, res) => {
 
     if (!currentPt) return res.status(400).json({ error: 'Трек не найден в плейлисте' });
 
-    // Find prev track
+
     let prevPt = await prisma.playlistTrack.findFirst({
       where: { playlistId: state.playlistId, position: { lt: currentPt.position } },
       orderBy: { position: 'desc' }
     });
 
-    // Loop to end
+
     if (!prevPt) {
       prevPt = await prisma.playlistTrack.findFirst({
         where: { playlistId: state.playlistId },

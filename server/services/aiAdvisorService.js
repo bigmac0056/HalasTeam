@@ -2,14 +2,14 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const generateRecommendations = async (userId) => {
-    // 1. Fetch user data (devices, settings, logs)
+
     const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
             devices: true,
             settings: true,
             energyLogs: {
-                where: { timestamp: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } // Last 30 days
+                where: { timestamp: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }
             }
         }
     });
@@ -18,26 +18,26 @@ const generateRecommendations = async (userId) => {
 
     const recommendations = [];
 
-    // 2. Analyze Devices
+
     const lights = user.devices.filter(d => d.type === 'Light');
     const activeLights = lights.filter(d => d.status);
 
-    // Rule 1: Too many active lights
+
     if (activeLights.length > 5) {
         recommendations.push({
             title: 'Выключить лишнее освещение',
             reason: `Сейчас включено ${activeLights.length} источников света. Отключение половины сэкономит энергию.`,
             actionType: 'TOGGLE_DEVICE',
-            targetDeviceId: null, // General advice or specific logic to pick ID
-            estimatedKwhSaveMonth: activeLights.length * 0.06 * 5 * 30, // Approx 60W * 5h * 30d
-            estimatedKztSaveMonth: activeLights.length * 0.06 * 5 * 30 * 25, // 25 KZT/kWh
+            targetDeviceId: null,
+            estimatedKwhSaveMonth: activeLights.length * 0.06 * 5 * 30,
+            estimatedKztSaveMonth: activeLights.length * 0.06 * 5 * 30 * 25,
             comfortRisk: 'low',
             autoApplicable: true,
             priority: 3
         });
     }
 
-    // Rule 2: HVAC Optimization
+
     const heaters = user.devices.filter(d => d.type === 'Heater' && d.status && d.value > 24);
     if (heaters.length > 0) {
         recommendations.push({
@@ -45,15 +45,15 @@ const generateRecommendations = async (userId) => {
             reason: 'Температура обогревателя установлена выше 24°C. Снижение на 1°C экономит до 7% энергии.',
             actionType: 'SET_TEMP',
             targetDeviceId: heaters[0].id,
-            estimatedKwhSaveMonth: 2 * 30, // Approx
+            estimatedKwhSaveMonth: 2 * 30,
             estimatedKztSaveMonth: 2 * 30 * 25,
             comfortRisk: 'medium',
-            autoApplicable: false, // Manual approve
+            autoApplicable: false,
             priority: 4
         });
     }
 
-    // Rule 3: Home Mode
+
     if (user.settings?.homeMode === 'Home' && new Date().getHours() > 23) {
         recommendations.push({
             title: 'Включить ночной режим',
@@ -68,9 +68,9 @@ const generateRecommendations = async (userId) => {
         });
     }
 
-    // Rule 4: High Consumption Alert (Analysis of logs)
+
     const totalConsumption = user.energyLogs.reduce((acc, log) => acc + log.energyConsumed, 0);
-    if (totalConsumption > 300) { // e.g., > 300 kWh
+    if (totalConsumption > 300) {
         recommendations.push({
             title: 'Аномально высокое потребление',
             reason: 'Ваше потребление за месяц превысило 300 кВт·ч. Проверьте энергоемкие приборы.',
@@ -84,9 +84,9 @@ const generateRecommendations = async (userId) => {
         });
     }
 
-    // Sync to DB
+
     for (const rec of recommendations) {
-        // Check duplicate
+
         const exists = await prisma.aiRecommendation.findFirst({
             where: { userId, title: rec.title, isDismissed: false, isApplied: false }
         });
@@ -115,7 +115,7 @@ const applyRecommendation = async (userId, recId) => {
     });
     if (!rec) throw new Error('Recommendation not found');
 
-    // Safety check
+
     const WHITELIST_ACTIONS = ['TOGGLE_DEVICE', 'SET_MODE', 'SET_TEMP'];
     if (!WHITELIST_ACTIONS.includes(rec.actionType)) {
         throw new Error('Action not safe or auto-executable');
@@ -183,13 +183,13 @@ const applyRecommendation = async (userId, recId) => {
         }
     }
 
-    // Mark as applied
+
     await prisma.aiRecommendation.update({
         where: { id: recId },
         data: { isApplied: true }
     });
 
-    // Log
+
     await prisma.aiActionLog.create({
         data: {
             userId,

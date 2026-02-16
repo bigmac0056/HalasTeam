@@ -8,10 +8,10 @@ const {
     clearNotifications
 } = require('../state');
 
-// All routes require authentication
+
 router.use(authMiddleware);
 
-// Get all notifications for the user
+
 router.get('/', async (req, res) => {
     try {
         const notifications = await getNotificationsByUserId(req.user.id);
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Create a new notification (internal use mostly, but exposed for frontend automation logic)
+
 router.post('/', async (req, res) => {
     try {
         const { text, type, icon } = req.body;
@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
 
         const notification = await addNotification({
             userId: req.user.id,
-            title: 'Уведомление', // Added default title as it might be required by schema or model
+            title: 'Уведомление',
             message: text,
             type: type || 'info',
             icon: icon || 'notifications'
@@ -43,7 +43,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Mark a notification as read
+
 router.patch('/:id/read', async (req, res) => {
     try {
         const success = await markNotificationAsRead(req.params.id, req.user.id);
@@ -57,7 +57,7 @@ router.patch('/:id/read', async (req, res) => {
     }
 });
 
-// Clear all notifications for the user
+
 router.delete('/', async (req, res) => {
     try {
         await clearNotifications(req.user.id);

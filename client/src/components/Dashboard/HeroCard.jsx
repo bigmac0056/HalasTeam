@@ -112,16 +112,16 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
     const city = weather?.city || 'Ваш регион';
     const condition = weather?.condition || weatherUi.label;
 
-    // Calculate real stats
+
     const tempSensors = devices.filter(d => (d.type === 'Sensor' && d.sensorType === 'temperature') || d.type === 'AC' || d.type === 'Heater');
     const avgTemp = tempSensors.length
         ? Math.round(tempSensors.reduce((acc, d) => acc + (d.value || 21), 0) / tempSensors.length)
         : 22;
 
-    // Count unread notifications for "Active Alerts"
+
     const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
 
-    // Status depends on critical sensors OR high unread count
+
     const criticalSensors = devices.filter(d => d.type === 'Sensor' && (d.value === 1 || d.isAlert));
     const isBrightSkyTheme = isDay && (
         !Number.isFinite(weatherCodeNum) ||
@@ -129,7 +129,7 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
         CLOUD_CODES.includes(weatherCodeNum)
     );
 
-    // Status Logic: Red if critical sensors, Orange if many notifications, else Blue
+
     let statusText = 'Оптимальный';
     let statusColor = isBrightSkyTheme ? 'text-blue-900' : 'text-blue-400';
     let cardBgClass = 'bg-blue-500/10';
@@ -146,7 +146,6 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
 
     return (
         <div className={`${weatherTheme.cardClass} rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-blue-500/20 animate-fade-in-up`}>
-            {/* Abstract Background Decor */}
             <div className={`absolute top-0 right-0 w-64 h-64 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none ${cardBgClass}`}></div>
             <div className={`absolute bottom-0 left-0 w-52 h-52 rounded-full -ml-20 -mb-20 blur-3xl pointer-events-none ${weatherTheme.glowClass}`}></div>
 
@@ -156,7 +155,6 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
                 </div>
 
                 <div className="flex flex-wrap items-end justify-between gap-8">
-                    {/* Indoor KPIs */}
                     <div className="flex gap-8">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
@@ -189,7 +187,6 @@ const HeroCard = ({ weather, devices = [], notifications = [] }) => {
                         </div>
                     </div>
 
-                    {/* External Weather */}
                     <div className="flex items-center gap-4 text-right">
                         <div>
                             <div className="text-6xl font-black flex items-start">
