@@ -16,6 +16,32 @@ const {
 
 router.use(authMiddleware);
 
+const parseLogMetadata = (metadata) => {
+  if (!metadata) return null;
+  if (typeof metadata === 'object') return metadata;
+  try {
+    return JSON.parse(metadata);
+  } catch {
+    return null;
+  }
+};
+
+const classifyLog = (log) => {
+  const metadata = parseLogMetadata(log.metadata);
+  const source = String(metadata?.source || '').toLowerCase();
+  const message = String(log.message || '').toLowerCase();
+
+  if (source === 'sensor' || message.includes('тревога')) return 'alert';
+  if (source === 'scheduler' || source === 'settings' || source === 'automation') return 'automation';
+  if (source === 'manual') return 'manual';
+
+  if (message.includes('автоматизация') || message.includes('режим') || message.includes('автопилот')) {
+    return 'automation';
+  }
+
+  return 'manual';
+};
+
 // Get all automation rules
 router.get('/', async (req, res) => {
   try {
@@ -88,7 +114,8 @@ router.delete('/logs', async (req, res) => {
     if (batch.count > 0) {
       await addAutomationLog({
         userId,
-        message: `🧹 Журнал очищен: удалено ${batch.count} записей`
+        message: `🧹 Журнал очищен: удалено ${batch.count} записей`,
+        metadata: JSON.stringify({ source: 'manual', type: 'cleanup' })
       });
     }
 
@@ -175,7 +202,17 @@ router.post('/execute', async (req, res) => {
       const statusText = desiredStatus ? 'ВКЛ' : 'ВЫКЛ';
       const logMessage = `⚡ Автоматизация: ${targetDevice.name} ${statusText} (${rule.name})`;
 
-      await addAutomationLog({ userId: req.user.id, message: logMessage });
+      await addAutomationLog({
+        userId: req.user.id,
+        message: logMessage,
+        metadata: JSON.stringify({
+          source: 'automation',
+          ruleId: rule.id,
+          triggerType: triggerData.type || 'unknown',
+          deviceId: targetDevice.id,
+          desiredStatus
+        })
+      });
 
       // Create notification for automation action
       await addNotification({
@@ -221,8 +258,21 @@ router.post('/execute-now', async (req, res) => {
 // Get automation logs
 router.get('/logs', async (req, res) => {
   try {
+    const type = String(req.query.type || 'all').toLowerCase();
+    const allowedTypes = new Set(['all', 'alert', 'automation', 'manual']);
+    const safeType = allowedTypes.has(type) ? type : 'all';
+
     const logs = await getAutomationLogsByUserId(req.user.id);
-    res.json({ logs });
+    const enrichedLogs = (Array.isArray(logs) ? logs : []).map((log) => ({
+      ...log,
+      category: classifyLog(log)
+    }));
+
+    const filteredLogs = safeType === 'all'
+      ? enrichedLogs
+      : enrichedLogs.filter((log) => log.category === safeType);
+
+    res.json({ logs: filteredLogs, selectedType: safeType });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch automation logs' });
   }
@@ -231,14 +281,21 @@ router.get('/logs', async (req, res) => {
 // Add automation log
 router.post('/logs', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, metadata } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    const providedMetadata = parseLogMetadata(metadata);
+    const resolvedMetadata = {
+      source: 'manual',
+      ...(providedMetadata || {})
+    };
+
     const log = await addAutomationLog({
       userId: req.user.id,
-      message
+      message,
+      metadata: JSON.stringify(resolvedMetadata)
     });
 
     res.status(201).json({ log });

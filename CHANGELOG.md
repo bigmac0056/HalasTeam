@@ -21,6 +21,10 @@
 - **Dashboard (P1)**: Added separate quick buttons `Я ушел` and `Ночь`.
 - **Dashboard (P1)**: Added AI status summary in SmartSphere AI sidebar widget.
 - **Tests (CI)**: Updated Dashboard test selectors to handle duplicated `Ночь` button text after quick-action buttons were introduced.
+- **Automation Logs (P2)**: Added log categorization (`alert / automation / manual`) in backend response, plus optional `type` filter in `GET /automation/logs`.
+- **Dashboard (P2)**: Added Activity Log filter chips (`Все / Тревоги / Автоматика / Ручные`) with colored indicators.
+- **Dashboard (P2)**: Added reliability mini-block (`API status`, `last sync`, `geolocation fallback`).
+- **Dashboard (P2)**: Added dismissible 1-minute onboarding hint for judges.
 
 ## [1.5.0] - 2026-02-15
 ### Added

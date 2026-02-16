@@ -30,6 +30,7 @@ const ROOM_OPTIONS = ['Зал', 'Спальня', 'Кухня', 'Туалет', 
 const DEFAULT_WEATHER_COORDS = { lat: 51.1694, lon: 71.4491 };
 const WEATHER_REFRESH_MS = 5 * 60 * 1000;
 const LAST_KNOWN_COORDS_KEY = 'smartsphere_last_known_coords';
+const JUDGE_HINT_DISMISSED_KEY = 'smartsphere_judge_hint_dismissed';
 const DEFAULT_AI_STATUS = {
   new: { count: 0, items: [] },
   applied: { count: 0, items: [] },
@@ -120,11 +121,21 @@ export default function Dashboard() {
   const [autoPilotEnabled, setAutoPilotEnabled] = useState(false);
   const [isAutoPilotUpdating, setIsAutoPilotUpdating] = useState(false);
   const [automationLog, setAutomationLog] = useState([]);
+  const [logCategoryFilter, setLogCategoryFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [aiActions, setAiActions] = useState([]);
   const [aiStatus, setAiStatus] = useState(DEFAULT_AI_STATUS);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [apiHealth, setApiHealth] = useState({ status: 'unknown', checkedAt: null });
+  const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [showJudgeHint, setShowJudgeHint] = useState(() => {
+    try {
+      return localStorage.getItem(JUDGE_HINT_DISMISSED_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
 
@@ -149,24 +160,30 @@ export default function Dashboard() {
     syncFromBackend
   } = useMusicPlayer();
 
-  const fetchDevices = async () => {
+  const markSynced = useCallback(() => {
+    setLastSyncAt(new Date());
+  }, []);
+
+  const fetchDevices = useCallback(async () => {
     try {
       const res = await API.get('/devices');
       const devicesData = res.data?.devices;
       setDevices(Array.isArray(devicesData) ? devicesData.filter(Boolean) : []);
+      markSynced();
     } catch (error) {
       console.error('Error fetching devices:', error);
     }
-  };
+  }, [markSynced]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const res = await API.get('/notifications');
       setNotifications(res.data?.notifications || []);
+      markSynced();
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  };
+  }, [markSynced]);
 
   const fetchHomeMode = async () => {
     try {
@@ -187,12 +204,23 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAutomationLogs = async () => {
+  const fetchAutomationLogs = useCallback(async () => {
     try {
       const res = await API.get('/automation/logs');
-      setAutomationLog(res.data.logs);
+      setAutomationLog(Array.isArray(res.data?.logs) ? res.data.logs : []);
+      markSynced();
     } catch (error) {
       console.error('Error fetching automation logs:', error);
+    }
+  }, [markSynced]);
+
+  const checkApiHealth = async () => {
+    try {
+      await API.get('/health');
+      setApiHealth({ status: 'online', checkedAt: new Date() });
+    } catch (error) {
+      console.error('API health check failed:', error);
+      setApiHealth({ status: 'offline', checkedAt: new Date() });
     }
   };
 
@@ -343,6 +371,7 @@ export default function Dashboard() {
           fetchAutopilotState(),
           fetchAutomationLogs(),
           fetchNotifications(),
+          checkApiHealth(),
           syncFromBackend(),
           fetchAiRecommendations(),
           fetchAiActions(),
@@ -361,8 +390,14 @@ export default function Dashboard() {
       fetchDevices();
       fetchNotifications();
     }, 10000);
-    return () => clearInterval(interval);
-  }, [navigate, syncFromBackend]);
+    const healthInterval = setInterval(() => {
+      checkApiHealth();
+    }, 30000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(healthInterval);
+    };
+  }, [navigate, syncFromBackend, fetchDevices, fetchNotifications, fetchAutomationLogs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -453,6 +488,22 @@ export default function Dashboard() {
 
   const rooms = ['Все', ...new Set([...ROOM_OPTIONS, ...devices.map(d => d.room).filter(Boolean)])];
   const filteredDevices = selectedRoom === 'Все' ? devices : devices.filter(d => d.room === selectedRoom);
+  const filteredLogs = automationLog.filter((log) => {
+    if (logCategoryFilter === 'all') return true;
+    if (log.category) return log.category === logCategoryFilter;
+    const message = String(log.message || '').toLowerCase();
+    if (logCategoryFilter === 'alert') return message.includes('тревога');
+    if (logCategoryFilter === 'automation') return message.includes('автомат') || message.includes('режим') || message.includes('автопилот');
+    return !message.includes('автомат') && !message.includes('режим') && !message.includes('автопилот') && !message.includes('тревога');
+  });
+  const dismissJudgeHint = () => {
+    setShowJudgeHint(false);
+    try {
+      localStorage.setItem(JUDGE_HINT_DISMISSED_KEY, 'true');
+    } catch {
+      // ignore
+    }
+  };
 
   const renderDeviceCard = (device) => {
     if (device.type === 'Speaker' || (device.type === 'Socket' && device.name.toLowerCase().includes('speaker'))) {
@@ -569,6 +620,25 @@ export default function Dashboard() {
             Обновление данных...
           </div>
         )}
+        {showJudgeHint && (
+          <div className="mb-6 rounded-2xl border border-indigo-100 dark:border-indigo-800 bg-indigo-50/80 dark:bg-indigo-900/20 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-1">Подсказка для демонстрации (1 минута)</p>
+                <p className="text-xs text-indigo-700/80 dark:text-indigo-300/90">
+                  1) Нажми <span className="font-semibold">Я ушел</span> → 2) покажи запись в Activity Log → 3) открой Энергопотребление и блок Советы ИИ.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissJudgeHint}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 dark:bg-slate-800/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700"
+              >
+                Скрыть
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col lg:flex-row gap-10">
 
           {/* Main Dashboard Area */}
@@ -675,10 +745,35 @@ export default function Dashboard() {
                 <span className="material-icons-round text-primary">history</span>
                 Activity Log
               </h3>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {[
+                  { key: 'all', label: 'Все' },
+                  { key: 'alert', label: 'Тревоги' },
+                  { key: 'automation', label: 'Автоматика' },
+                  { key: 'manual', label: 'Ручные' }
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setLogCategoryFilter(item.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      logCategoryFilter === item.key
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-500'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
               <div className="space-y-4">
-                {automationLog.slice(0, 5).map((log, idx) => (
+                {filteredLogs.slice(0, 8).map((log, idx) => (
                   <div key={idx} className="flex gap-4 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors group">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0 group-hover:scale-150 transition-transform"></div>
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 group-hover:scale-150 transition-transform ${
+                      log.category === 'alert' ? 'bg-red-500'
+                        : log.category === 'manual' ? 'bg-amber-500'
+                          : 'bg-primary'
+                    }`}></div>
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter mb-1">
                         {new Date(log.timestamp || log.time).toLocaleTimeString('ru-RU')}
@@ -687,6 +782,36 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
+                {filteredLogs.length === 0 && (
+                  <p className="text-xs text-slate-400">Событий выбранного типа пока нет.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-card-dark rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm transition-all h-fit">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <span className="material-icons-round text-primary">verified</span>
+                Надежность системы
+              </h3>
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-slate-500">Статус API</span>
+                  <span className={`font-bold ${apiHealth.status === 'online' ? 'text-emerald-600' : apiHealth.status === 'offline' ? 'text-red-500' : 'text-slate-500'}`}>
+                    {apiHealth.status === 'online' ? 'Онлайн' : apiHealth.status === 'offline' ? 'Оффлайн' : 'Проверка...'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-slate-500">Последняя синхронизация</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">
+                    {lastSyncAt ? lastSyncAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-slate-500">Геолокация/погода</span>
+                  <span className={`font-semibold ${(weather?.isFallback || weather?.source === 'client-fallback') ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {(weather?.isFallback || weather?.source === 'client-fallback') ? 'Fallback' : 'Точные данные'}
+                  </span>
+                </div>
               </div>
             </div>
           </aside>
